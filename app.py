@@ -28,10 +28,10 @@ def validar_anio(texto_celda, anio_buscado):
 
 # Formulario de entradas en pantalla con las casillas separadas
 with str_m.form("buscador_form"):
-    txt_marca = str_m.text_input("1. Marca (Columna A - ej: Acura, Audi...)").strip().lower()
-    txt_modelo = str_m.text_input("2. Modelo / Motor (Columna B - ej: Integra, CL...)").strip().lower()
-    txt_anio = str_m.text_input("3. Año exacto (Columna C - ej: 1990, 1998...)").strip()
-    btn_buscar = str_m.form_submit_button("🔍 Buscar Repuestos", use_container_width=True)
+    txt_marca = str_m.text_input("1. Marca (ej: Acura, Audi...)").strip().lower()
+    txt_modelo = str_m.text_input("2. Modelo / Motor (ej: Integra, CL...)").strip().lower()
+    txt_anio = str_m.text_input("3. Año exacto (ej: 1990, 1998...)").strip()
+    btn_buscar = str_m.form_submit_button("🔍 Buscar", use_container_width=True)
 
 if btn_buscar:
     if not txt_marca and not txt_modelo and not txt_anio:
@@ -58,56 +58,7 @@ if btn_buscar:
                 for idx, fila in df_str.iterrows():
                     lista_celdas = fila.values.tolist()
                     
-                    if len(lista_celdas) < 3:
-                        continue
 
-                    # Asignación por posiciones físicas fijas (A=0, B=1, C=2)
-                    val_marca = str(lista_celdas[0]).strip().lower()
-                    val_modelo = str(lista_celdas[1]).strip().lower()
-                    val_anio_celda = str(lista_celdas[2]).strip()
-
-                    # Saltamos cabeceras o filas vacías si las hay
-                    if "hoja de" in val_marca or "catálogo" in val_marca:
-                        continue
-
-                    # Comprobación de criterios cruzados por columnas individuales
-                    cumple_marca = not txt_marca or (txt_marca in val_marca)
-                    cumple_modelo = not txt_modelo or (txt_modelo in val_modelo)
-                    cumple_anio = not txt_anio or validar_anio(val_anio_celda, txt_anio)
-
-                    if cumple_marca and cumple_modelo and cumple_anio:
-                        filas_coincidentes.append(lista_celdas)
-
-                # Desplegar resultados encontrados
-                if len(filas_coincidentes) > 0:
-                    str_m.success(f"📦 {len(filas_coincidentes)} registro(s) encontrado(s)")
-
-                    for item in filas_coincidentes:
-                        marca_head = str(item[0]).strip().upper() if str(item[0]).strip() else "MARCA GENERAL"
-                        modelo_sub = str(item[1]).strip() if str(item[1]).strip() else "N/A"
-                        anio_sub = str(item[2]).strip() if str(item[2]).strip() else "N/A"
-                        
-                        val_delantera = str(item[3]).strip() if len(item) > 3 else ""
-                        val_trasera = str(item[4]).strip() if len(item) > 4 else ""
-
-                        with str_m.container(border=True):
-                            str_m.markdown(f"### {marca_head}")
-                            str_m.markdown(f"**Mod:** {modelo_sub} | **Años:** {anio_sub}")
-
-                            col1, col2 = str_m.columns(2)
-                            with col1:
-                                if val_delantera:
-                                    str_m.info(f"🚘 **Delantera:**\n{val_delantera}")
-                                else:
-                                    str_m.write("🚘 *Delantera: No asignada*")
-                            with col2:
-                                if val_trasera:
-                                    str_m.success(f"🛑 **Trasera:**\n{val_trasera}")
-                                else:
-                                    str_m.write("🛑 *Trasera: No asignada*")
-                else:
-                    str_m.error("❌ No se encontraron repuestos con los criterios ingresados.")
-
-            except Exception as e:
-                str_m.error(f"Error al procesar el archivo Excel local:\n{str(e)}")
-
+streamlit
+pandas
+openpyxl
