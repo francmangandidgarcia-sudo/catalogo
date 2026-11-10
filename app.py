@@ -25,6 +25,16 @@ USUARIOS_PERMITIDOS_SUMAR = ["admin", "leticia", "abraham"]
 ARCHIVO_EXCEL = "datos.xlsx"
 
 # =======================================================
+# INICIALIZACIÓN DEL ESTADO DE LA SESIÓN
+# =======================================================
+if "autenticado" not in str_m.session_state:
+    str_m.session_state["autenticado"] = False
+if "usuario_actual" not in str_m.session_state:
+    str_m.session_state["usuario_actual"] = ""
+if "resultados_busqueda" not in str_m.session_state:
+    str_m.session_state["resultados_busqueda"] = None
+
+# =======================================================
 # FUNCIONES DE CONTROL DE EXCEL
 # =======================================================
 def cargar_catalogo_real():
@@ -35,7 +45,8 @@ def cargar_catalogo_real():
         for col in df.columns:
             df[col] = df[col].str.replace(r"\.0$", "", regex=True).str.strip()
         return df
-    except Exception:
+    except Exception as e:
+        str_m.error(f"Error al leer el archivo Excel: {e}")
         return None
 
 def actualizar_stock_en_excel(fila_index, columna_index, nueva_cantidad):
@@ -44,8 +55,11 @@ def actualizar_stock_en_excel(fila_index, columna_index, nueva_cantidad):
         df.iloc[fila_index, columna_index] = int(nueva_cantidad)
         df.to_excel(ARCHIVO_EXCEL, index=False, header=False)
         return True
+    except PermissionError:
+        str_m.error("❌ No se pudo guardar. Por favor, CIERRA el archivo 'datos.xlsx' en tu computadora y vuelve a intentarlo.")
+        return False
     except Exception as e:
-        str_m.error(f"Error al guardar en Excel: {e}")
+        str_m.error(f"Error inesperado al guardar en Excel: {e}")
         return False
 
 def validar_anio(texto_celda, anio_buscado):
@@ -113,7 +127,6 @@ else:
                 df_catalogo = cargar_catalogo_real()
                 
                 if df_catalogo is None:
-                    str_m.error("❌ Archivo 'datos.xlsx' no encontrado o corrupto.")
                     str_m.session_state["resultados_busqueda"] = None
                 else:
                     filas_coincidentes = []
@@ -155,7 +168,7 @@ else:
                 modelo_sub = str(celdas[1]).strip() if celdas[1] else "N/A"
                 anio_sub = str(celdas[2]).strip() if celdas[2] else "N/A"
                 
-                # Mapeo de Stock y Código según la nueva estructura
+                # Mapeo de columnas según el nuevo Excel de 7 columnas
                 stock_del = str(celdas[3]).strip() if len(celdas) > 3 else "0"
                 cod_delantero = str(celdas[4]).strip() if len(celdas) > 4 else ""
                 stock_tra = str(celdas[5]).strip() if len(celdas) > 5 else "0"
@@ -171,16 +184,14 @@ else:
                     str_m.markdown(f"### 🚘 {marca_head}")
                     str_m.markdown(f"**Modelo/Motor:** {modelo_sub} | **Años:** {anio_sub}")
                     
-                    # SELECTOR GLOBAL DE UNIDADES A CAMBIAR
+                    # Selector de cantidad de piezas a modificar
                     unidades_cambio = str_m.number_input("Cantidad de piezas a modificar:", min_value=1, value=1, step=1, key=f"cant_{fila_idx}")
                     
-                    # DIVISION DE PANTALLA EN DOS COLUMNAS: DELANTERA Y TRASERA
                     col_del, col_tra = str_m.columns(2)
                     
-                    # --- BLOQUE PASTILLA DELANTERA ---
+                    # --- BLOQUE PASTILLA DELANTERA (Columna D) ---
                     with col_del:
                         str_m.info(f"🚘 **Delantera:**\n{cod_delantero if cod_delantero and cod_delantero.lower() != 'nan' else 'No asignada'}")
-                        
                         if cant_del == 0:
                             str_m.error("⚠️ Stock Del.: 0 u.")
                         else:
@@ -198,11 +209,3 @@ else:
                                     str_m.error("No hay stock suficiente")
                         with c_del_sumar:
                             if usuario_activo in USUARIOS_PERMITIDOS_SUMAR:
-                                if str_m.button("➕ Agregar", key=f"del_sum_{fila_idx}", use_container_width=True):
-                                    if actualizar_stock_en_excel(fila_idx, 3, cant_del + unidades_cambio):
-                                        str_m.toast("📈 Stock delantero incrementado", icon="✅")
-                                        str_m.session_state["resultados_busqueda"] = None
-                                        str_m.rerun()
-                    
-                    # --- BLOQUE PASTILLA TRASERA ---
-                    with col_tra:
