@@ -14,10 +14,10 @@ str_m.set_page_config(
 # Puedes añadir todos los usuarios que quieras siguiendo este formato:
 # "usuario": "contraseña"
 USUARIOS_REGISTRADOS = {
-    "admin": "frenos2026",
-    "juan": "pastillas45",
-    "carlos": "taller2026",
-    "vendedor1": "frenosmf"
+    "admin": "admin",
+    "Leticia": "aceitera2026",
+    "dailyn": "taller2026",
+    "jackelin": "taller2026"
 }
 # =======================================================
 
