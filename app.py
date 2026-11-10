@@ -185,6 +185,7 @@ else:
                                 if len(lista_celdas) < 7:
                                     continue
                                 
+                                # Columna E (4) es código delantero, Columna G (6) es código trasero
                                 cod_del_celda = str(lista_celdas[4]).strip().lower()
                                 cod_tra_celda = str(lista_celdas[6]).strip().lower()
                                 
@@ -193,7 +194,7 @@ else:
                             str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
     # -------------------------------------------------------
-    # DESPLIEGUE DE RESULTADOS SECUENCIAL (DISEÑO PLANO INMUNE)
+    # DESPLIEGUE DE RESULTADOS SECUENCIAL
     # -------------------------------------------------------
     resultados = str_m.session_state["resultados_busqueda"]
     
@@ -215,6 +216,3 @@ else:
                 cod_trasero = str(celdas[6]).strip() if len(celdas) > 6 else ""
                 
                 cant_del = limpiar_entero(stock_del)
-                cant_tra = limpiar_entero(stock_tra)
-                
-                # Encabezado del Producto
