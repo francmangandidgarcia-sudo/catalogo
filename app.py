@@ -25,7 +25,7 @@ USUARIOS_PERMITIDOS_SUMAR = ["admin", "leticia", "abraham"]
 ARCHIVO_EXCEL = "datos.xlsx"
 
 # =======================================================
-# INICIALIZACIÓN DEL ESTADO DE LA SESIÓN
+# INICIALIZACIÓN DEL ESTADO DE LA SESIÓN (SESSION STATE)
 # =======================================================
 if "autenticado" not in str_m.session_state:
     str_m.session_state["autenticado"] = False
@@ -52,13 +52,14 @@ def cargar_catalogo_real():
 def actualizar_stock_en_excel(fila_index, columna_index, nueva_cantidad):
     try:
         df = pd.read_excel(ARCHIVO_EXCEL, header=None)
+        # Asegurar dimensiones mínimas del DataFrame
         while df.shape[1] <= columna_index:
             df[df.shape[1]] = ""
         df.iloc[fila_index, columna_index] = int(nueva_cantidad)
         df.to_excel(ARCHIVO_EXCEL, index=False, header=False)
         return True
     except PermissionError:
-        str_m.error("❌ Archivo 'datos.xlsx' bloqueado. Intente de nuevo.")
+        str_m.error("❌ Archivo 'datos.xlsx' abierto en otra PC o bloqueado. Ciérralo y reintenta.")
         return False
     except Exception as e:
         str_m.error(f"Error inesperado al guardar en Excel: {e}")
@@ -163,14 +164,14 @@ else:
                             cumple_anio = not txt_anio or validar_anio(val_anio_celda, txt_anio)
                             
                             if cumple_marca and cumple_modelo and cumple_anio:
-                                filas_coincidentes.append({"index": idx, "data": lista_celdas})
+                                filas_coincidentes.append({"index": int(idx), "data": lista_celdas})
                         str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
     # --- PESTAÑA B: BUSCADOR POR CÓDIGO ---
     if tab_codigo is not None:
         with tab_codigo:
             with str_m.form("buscador_codigo_form"):
-                txt_codigo = str_m.text_input("Ingrese el código del repuesto (ej: WVA-24332, 24332...)").strip().lower()
+                txt_codigo = str_m.text_input("Ingrese el código del repuesto (ej: WVA-24332...)").strip().lower()
                 btn_buscar_c = str_m.form_submit_button("🔍 Buscar por Código", use_container_width=True)
                 
                 if btn_buscar_c:
@@ -197,11 +198,11 @@ else:
                                         break
                                 
                                 if coincidencia_codigo:
-                                    filas_coincidentes.append({"index": idx, "data": lista_celdas})
+                                    filas_coincidentes.append({"index": int(idx), "data": lista_celdas})
                             str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
     # -------------------------------------------------------
-    # VISOR DE RESULTADOS BLINDADO COMPLEMENTARIO
+    # VISOR DE RESULTADOS PERSISTENTE Y SEGURO
     # -------------------------------------------------------
     str_m.write("---")
     str_m.write("### Resultados del Catálogo")
@@ -212,12 +213,9 @@ else:
             str_m.success(f"📦 {len(resultados)} registro(s) encontrado(s)")
             
             for item in resultados:
-                fila_idx = item["index"]
-                celdas = item["data"]
+                # Extracción robusta de llave/valor previniendo desajustes de tipo
+                fila_idx = item.get("index") if isinstance(item, dict) else item[0]
+                celdas = item.get("data") if isinstance(item, dict) else item[1]
                 
-                # RELLENO DE SEGURIDAD AUTOMÁTICO: Rellena celdas faltantes en tiempo de ejecución
+                # Asegurar de forma dinámica que la lista tenga al menos las 7 celdas requeridas
                 while len(celdas) < 7:
-                    celdas.append("")
-                
-                marca_head = str(celdas[0]).strip().upper() if celdas[0] else "MARCA NO ASIGNADA"
-                modelo_sub = str(celdas[1]).strip() if celdas[1] else "N/A"
