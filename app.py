@@ -85,10 +85,10 @@ else:
 
     # Formulario de entradas en pantalla con las casillas separadas
     with str_m.form("buscador_form"):
-        txt_marca = str_m.text_input("1. Marca (Columna A - ej: Acura, Audi...)").strip().lower()
-        txt_modelo = str_m.text_input("2. Modelo / Motor (Columna B - ej: Integra, CL...)").strip().lower()
-        txt_anio = str_m.text_input("3. Año exacto (Columna C - ej: 1990, 1998...)").strip()
-        btn_buscar = str_m.form_submit_button("🔍 Buscar Repuestos", use_container_width=True)
+        txt_marca = str_m.text_input("1. Marca (ej: Acura, Audi...)").strip().lower()
+        txt_modelo = str_m.text_input("2. Modelo / Motor (ej: Integra, CL...)").strip().lower()
+        txt_anio = str_m.text_input("3. Año exacto (ej: 1990, 1998...)").strip()
+        btn_buscar = str_m.form_submit_button("🔍 Buscar", use_container_width=True)
 
     if btn_buscar:
         if not txt_marca and not txt_modelo and not txt_anio:
