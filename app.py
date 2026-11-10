@@ -16,7 +16,7 @@ str_m.set_page_config(
 USUARIOS_REGISTRADOS = {
     "admin": "admin",
     "Leticia": "Aceitera2026",
-    "Abraham": "Jefe2026",
+    "Abraham": "jefe2026",
     "dailyn": "Lubricante2026",
     "jackelin": "Repuesto2026"
 }
