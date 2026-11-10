@@ -155,7 +155,7 @@ else:
                             val_modelo = str(lista_celdas[1]).strip().lower()
                             val_anio_celda = str(lista_celdas[2]).strip()
                             
-                            if "hoja de" in val_marca or "catálogo" in val_marca or "marca" in val_marca:
+                            if "hoja de" in val_marca or "catálogo" in val_marca or "marca" in val_marca or val_marca == "":
                                 continue
                                 
                             cumple_marca = not txt_marca or (txt_marca in val_marca)
@@ -187,7 +187,7 @@ else:
                                     continue
                                 
                                 val_marca = str(lista_celdas[0]).strip().lower()
-                                if "hoja de" in val_marca or "catálogo" in val_marca or "marca" in val_marca:
+                                if "hoja de" in val_marca or "catálogo" in val_marca or "marca" in val_marca or val_marca == "":
                                     continue
 
                                 coincidencia_codigo = False
@@ -201,7 +201,7 @@ else:
                             str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
     # -------------------------------------------------------
-    # VISOR DE RESULTADOS PERSISTENTE Y SEGURO Corregido
+    # VISOR DE RESULTADOS PERSISTENTE Y SEGURO (MÉTODO PLANO)
     # -------------------------------------------------------
     str_m.write("---")
     str_m.write("### Resultados del Catálogo")
@@ -212,11 +212,12 @@ else:
             str_m.success(f"📦 {len(resultados)} registro(s) encontrado(s)")
             
             for item in resultados:
-                # CORRECCIÓN CLAVE: Extraer de forma segura los valores desde el diccionario estructurado
+                # Comprobación de seguridad para evitar saltos por filas fantasma
+                if not isinstance(item, dict) or "data" not in item:
+                    continue
+                    
                 fila_idx = item["index"]
                 celdas = item["data"]
                 
-                # Relleno de seguridad para evitar desajustes en el tamaño de la lista
+                # Relleno de seguridad
                 if len(celdas) < 7:
-                    celdas = celdas + [""] * (7 - len(celdas))
-                
