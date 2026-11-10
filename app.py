@@ -15,9 +15,9 @@ str_m.set_page_config(
 # "usuario": "contraseña"
 USUARIOS_REGISTRADOS = {
     "admin": "admin",
-    "Leticia": "aceitera2026",
-    "dailyn": "taller2026",
-    "jackelin": "taller2026"
+    "Leticia": "Aceitera2026",
+    "dailyn": "Lubricante2026",
+    "jackelin": "Repuesto2026"
 }
 # =======================================================
 
