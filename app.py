@@ -26,14 +26,15 @@ def validar_anio(texto_celda, anio_buscado):
             return True
     return False
 
-# Formulario de entradas en pantalla
+# Formulario de entradas en pantalla con las casillas separadas
 with str_m.form("buscador_form"):
-    txt_marca_modelo = str_m.text_input("1. Marca o Modelo (ej: Integra, Legend, CL...)").strip().lower()
-    txt_anio = str_m.text_input("2. Año exacto (ej: 1990, 1998...)").strip()
+    txt_marca = str_m.text_input("1. Marca (Columna A - ej: Acura, Audi...)").strip().lower()
+    txt_modelo = str_m.text_input("2. Modelo / Motor (Columna B - ej: Integra, CL...)").strip().lower()
+    txt_anio = str_m.text_input("3. Año exacto (Columna C - ej: 1990, 1998...)").strip()
     btn_buscar = str_m.form_submit_button("🔍 Buscar Repuestos", use_container_width=True)
 
 if btn_buscar:
-    if not txt_marca_modelo and not txt_anio:
+    if not txt_marca and not txt_modelo and not txt_anio:
         str_m.warning("⚠️ Escribe al menos un dato para filtrar.")
     else:
         # LEER DIRECTAMENTE TU EXCEL LOCAL EN EL ESCRITORIO
@@ -43,7 +44,7 @@ if btn_buscar:
             str_m.error("❌ No se encontró el archivo 'datos.xlsx' en el Escritorio. Por favor, colócalo ahí.")
         else:
             try:
-                # Leemos el Excel local de forma plana sin asumir títulos
+                # Leemos el Excel de forma plana sin asumir títulos de columnas
                 df = pd.read_excel(archivo_excel, header=None)
 
                 # Limpieza absoluta de formatos numéricos decimales (.0) de Excel
@@ -53,27 +54,28 @@ if btn_buscar:
 
                 filas_coincidentes = []
 
-                # Recorrido inteligente por la estructura de tu documento
+                # Recorrido inteligente por la estructura ordenada de tu documento
                 for idx, fila in df_str.iterrows():
                     lista_celdas = fila.values.tolist()
                     
                     if len(lista_celdas) < 3:
                         continue
 
-                    # Mapeo según tu lista desalineada:
-                    val_col0 = str(lista_celdas[0]).strip().lower()
-                    val_marca_modelo = str(lista_celdas[1]).strip().lower()
+                    # Asignación por posiciones físicas fijas (A=0, B=1, C=2)
+                    val_marca = str(lista_celdas[0]).strip().lower()
+                    val_modelo = str(lista_celdas[1]).strip().lower()
                     val_anio_celda = str(lista_celdas[2]).strip()
 
-                    # Saltamos cabeceras del archivo
-                    if "hoja de" in val_marca_modelo or "catálogo" in val_marca_modelo:
+                    # Saltamos cabeceras o filas vacías si las hay
+                    if "hoja de" in val_marca or "catálogo" in val_marca:
                         continue
 
-                    # Comprobación flexible en las columnas A y B para la marca/modelo
-                    cumple_marca = not txt_marca_modelo or (txt_marca_modelo in val_marca_modelo) or (txt_marca_modelo in val_col0)
+                    # Comprobación de criterios cruzados por columnas individuales
+                    cumple_marca = not txt_marca or (txt_marca in val_marca)
+                    cumple_modelo = not txt_modelo or (txt_modelo in val_modelo)
                     cumple_anio = not txt_anio or validar_anio(val_anio_celda, txt_anio)
 
-                    if cumple_marca and cumple_anio:
+                    if cumple_marca and cumple_modelo and cumple_anio:
                         filas_coincidentes.append(lista_celdas)
 
                 # Desplegar resultados encontrados
@@ -81,18 +83,16 @@ if btn_buscar:
                     str_m.success(f"📦 {len(filas_coincidentes)} registro(s) encontrado(s)")
 
                     for item in filas_coincidentes:
-                        # Armamos el título combinando la columna A y B por si acaso
-                        parte0 = str(item[0]).strip()
-                        parte1 = str(item[1]).strip()
-                        cabecera = f"{parte0} {parte1}".strip().upper()
-                        
+                        marca_head = str(item[0]).strip().upper() if str(item[0]).strip() else "MARCA GENERAL"
+                        modelo_sub = str(item[1]).strip() if str(item[1]).strip() else "N/A"
                         anio_sub = str(item[2]).strip() if str(item[2]).strip() else "N/A"
+                        
                         val_delantera = str(item[3]).strip() if len(item) > 3 else ""
                         val_trasera = str(item[4]).strip() if len(item) > 4 else ""
 
                         with str_m.container(border=True):
-                            str_m.markdown(f"### {cabecera}")
-                            str_m.markdown(f"**Años de aplicación:** {anio_sub}")
+                            str_m.markdown(f"### {marca_head}")
+                            str_m.markdown(f"**Mod:** {modelo_sub} | **Años:** {anio_sub}")
 
                             col1, col2 = str_m.columns(2)
                             with col1:
