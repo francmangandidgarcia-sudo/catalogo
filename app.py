@@ -52,7 +52,7 @@ def cargar_catalogo_real():
 def actualizar_stock_en_excel(fila_index, columna_index, nueva_cantidad):
     try:
         df = pd.read_excel(ARCHIVO_EXCEL, header=None)
-        # Asegurar que existan suficientes columnas en la estructura física
+        # Asegurar dimensiones mínimas del DataFrame
         while df.shape[1] < 7:
             df[df.shape[1]] = ""
         df.iloc[fila_index, columna_index] = int(nueva_cantidad)
@@ -129,7 +129,7 @@ else:
         tab_vehiculo, tab_codigo = str_m.tabs(["🚗 Buscar por Vehículo", "🔢 Buscar por Código (Solo Admin)"])
     else:
         tab_vehicules_list = str_m.tabs(["🚗 Buscar por Vehículo"])
-        tab_vehiculo = tab_vehicules_list
+        tab_vehiculo = tab_vehicules_list[0]
         tab_codigo = None
 
     # --- PESTAÑA A: BUSCADOR POR VEHÍCULO (PARA TODOS) ---
@@ -167,6 +167,7 @@ else:
                             if cumple_marca and cumple_modelo and cumple_anio:
                                 filas_coincidentes.append({"index": idx, "data": lista_celdas})
                         str_m.session_state["resultados_busqueda"] = filas_coincidentes
+                        str_m.rerun()
 
     # --- PESTAÑA B: BUSCADOR POR CÓDIGO (SOLO VISIBLE SI ES ADMIN) ---
     if tab_codigo is not None:
@@ -192,17 +193,19 @@ else:
                                 if "hoja de" in val_marca or "catálogo" in val_marca or "marca" in val_marca:
                                     continue
 
-                                # Mapear de forma segura aunque falten columnas en filas cortas de Excel
+                                # Mapear las columnas E (índice 4) y G (índice 6) de forma segura
                                 cod_del_celda = str(lista_celdas[4]).strip().lower() if len(lista_celdas) > 4 else ""
                                 cod_tra_celda = str(lista_celdas[6]).strip().lower() if len(lista_celdas) > 6 else ""
                                 
                                 if (txt_codigo in cod_del_celda) or (txt_codigo in cod_tra_celda):
                                     filas_coincidentes.append({"index": idx, "data": lista_celdas})
                             str_m.session_state["resultados_busqueda"] = filas_coincidentes
+                            str_m.rerun()
 
     # -------------------------------------------------------
-    # DESPLIEGUE DE RESULTADOS SECUENCIAL
+    # VISOR DE RESULTADOS PERSISTENTE (FUERA DE LAS PESTAÑAS)
     # -------------------------------------------------------
+    str_m.write("### Resultados del Catálogo")
     resultados = str_m.session_state["resultados_busqueda"]
     
     if resultados is not None:
@@ -214,4 +217,3 @@ else:
                 celdas = item["data"]
                 
                 marca_head = str(celdas[0]).strip().upper() if len(celdas) > 0 else "MARCA NO ASIGNADA"
-                modelo_sub = str(celdas[1]).strip() if len(celdas) > 1 else "N/A"
