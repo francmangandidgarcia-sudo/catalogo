@@ -74,6 +74,14 @@ def validar_anio(texto_celda, anio_buscado):
             return True
     return False
 
+def limpiar_entero(valor):
+    if not valor or str(valor).lower() == "nan":
+        return 0
+    try:
+        return int(float(str(valor).strip()))
+    except ValueError:
+        return 0
+
 # -------------------------------------------------------
 # PANTALLA 1: FORMULARIO DE INICIO DE SESIÓN
 # -------------------------------------------------------
@@ -95,7 +103,7 @@ if not str_m.session_state["autenticado"]:
                 str_m.error("❌ Usuario o contraseña incorrectos. Intente de nuevo.")
 
 # -------------------------------------------------------
-# PANTALLA 2: EL BUSCADOR GESTIONADO POR ROLES Y GESTOR DE STOCK
+# PANTALLA 2: EL BUSCADOR GESTIONADO POR ROLES Y STOCK
 # -------------------------------------------------------
 else:
     usuario_activo = str_m.session_state["usuario_actual"]
@@ -117,8 +125,8 @@ else:
     if usuario_activo == "admin":
         tab_vehiculo, tab_codigo = str_m.tabs(["🚗 Buscar por Vehículo", "🔢 Buscar por Código (Solo Admin)"])
     else:
-        # Si no es admin, creamos una lista con un solo elemento para no romper la interfaz móvil
-        tab_vehiculo = str_m.tabs(["🚗 Buscar por Vehículo"])[0]
+        tab_vehicules_list = str_m.tabs(["🚗 Buscar por Vehículo"])
+        tab_vehiculo = tab_vehicules_list[0]
         tab_codigo = None
 
     # --- PESTAÑA A: BUSCADOR POR VEHÍCULO (PARA TODOS) ---
@@ -157,7 +165,7 @@ else:
                                 filas_coincidentes.append({"index": idx, "data": lista_celdas})
                         str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
-    # --- PESTAÑA B: BUSCADOR POR CÓDIGO (PROTEGIDA - SOLO VISIBLE SI ES ADMIN) ---
+    # --- PESTAÑA B: BUSCADOR POR CÓDIGO (SOLO VISIBLE SI ES ADMIN) ---
     if tab_codigo is not None:
         with tab_codigo:
             with str_m.form("buscador_codigo_form"):
@@ -177,7 +185,6 @@ else:
                                 if len(lista_celdas) < 7:
                                     continue
                                 
-                                # Columna E (4) es código delantero, Columna G (6) es código trasero
                                 cod_del_celda = str(lista_celdas[4]).strip().lower()
                                 cod_tra_celda = str(lista_celdas[6]).strip().lower()
                                 
@@ -186,7 +193,7 @@ else:
                             str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
     # -------------------------------------------------------
-    # DESPLIEGUE DE RESULTADOS SECUENCIAL A PRUEBA DE FALLOS
+    # DESPLIEGUE DE RESULTADOS SECUENCIAL
     # -------------------------------------------------------
     resultados = str_m.session_state["resultados_busqueda"]
     
@@ -207,5 +214,7 @@ else:
                 stock_tra = str(celdas[5]).strip() if len(celdas) > 5 else "0"
                 cod_trasero = str(celdas[6]).strip() if len(celdas) > 6 else ""
                 
-                try:
-                    cant_del = int(stock_del) if stock_del and stock_del.lower() != "nan" else 0
+                cant_del = limpiar_entero(stock_del)
+                cant_tra = limpiar_entero(stock_tra)
+                
+                with str_m.container(border=True):
