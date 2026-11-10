@@ -56,7 +56,7 @@ def actualizar_stock_en_excel(fila_index, columna_index, nueva_cantidad):
         df.to_excel(ARCHIVO_EXCEL, index=False, header=False)
         return True
     except PermissionError:
-        str_m.error("❌ No se pudo guardar. Por favor, CIERRA el archivo 'datos.xlsx' en tu computadora y vuelve a intentarlo.")
+        str_m.error("❌ No se pudo guardar. Por favor, CIERRA el archivo 'datos.xlsx' y reintenta.")
         return False
     except Exception as e:
         str_m.error(f"Error inesperado al guardar en Excel: {e}")
@@ -152,7 +152,7 @@ else:
                     str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
     # -------------------------------------------------------
-    # DESPLIEGUE DE RESULTADOS Y ACTUALIZADOR DE STOCK DOBLE
+    # DESPLIEGUE DE RESULTADOS (DISEÑO ANTI-ERRORES DE INDENTACIÓN)
     # -------------------------------------------------------
     resultados = str_m.session_state["resultados_busqueda"]
     
@@ -187,7 +187,7 @@ else:
                     
                     col_del, col_tra = str_m.columns(2)
                     
-                    # --- BLOQUE PASTILLA DELANTERA (Columna D) ---
+                    # --- LÓGICA PASTILLA DELANTERA ---
                     with col_del:
                         str_m.info(f"🚘 **Delantera:**\n{cod_delantero if cod_delantero and cod_delantero.lower() != 'nan' else 'No asignada'}")
                         if cant_del == 0:
@@ -195,17 +195,19 @@ else:
                         else:
                             str_m.markdown(f"📦 Stock Del.: **{cant_del} u.**")
                         
-                        c_del_restar, c_del_sumar = str_m.columns(2)
-                        with c_del_restar:
-                            if str_m.button("➖ Restar", key=f"del_res_{fila_idx}", use_container_width=True):
-                                if cant_del >= unidades_cambio:
-                                    if actualizar_stock_en_excel(fila_idx, 3, cant_del - unidades_cambio):
-                                        str_m.toast("📉 Stock delantero actualizado", icon="✅")
-                                        str_m.session_state["resultados_busqueda"] = None
-                                        str_m.rerun()
-                                else:
-                                    str_m.error("No hay stock suficiente")
-                        with c_del_sumar:
-                            if usuario_activo in USUARIOS_PERMITIDOS_SUMAR:
-                                if str_m.button("➕ Agregar", key=f"del_sum_{fila_idx}", use_container_width=True):
-                                    if actualizar_stock_en_excel(fila_idx, 3, cant_del + unidades_cambio):
+                        btn_del_restar = str_m.button("➖ Restar", key=f"del_res_{fila_idx}", use_container_width=True)
+                        if btn_del_restar and cant_del >= unidades_cambio:
+                            actualizar_stock_en_excel(fila_idx, 3, cant_del - unidades_cambio)
+                            str_m.session_state["resultados_busqueda"] = None
+                            str_m.rerun()
+                        elif btn_del_restar:
+                            str_m.error("No hay stock suficiente")
+                            
+                        if usuario_activo in USUARIOS_PERMITIDOS_SUMAR:
+                            if str_m.button("➕ Agregar", key=f"del_sum_{fila_idx}", use_container_width=True):
+                                actualizar_stock_en_excel(fila_idx, 3, cant_del + unidades_cambio)
+                                str_m.session_state["resultados_busqueda"] = None
+                                str_m.rerun()
+                    
+                    # --- LÓGICA PASTILLA TRASERA ---
+                    with col_tra:
