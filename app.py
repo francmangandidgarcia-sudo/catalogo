@@ -52,6 +52,9 @@ def cargar_catalogo_real():
 def actualizar_stock_en_excel(fila_index, columna_index, nueva_cantidad):
     try:
         df = pd.read_excel(ARCHIVO_EXCEL, header=None)
+        # Asegurar que existan suficientes columnas en la estructura física
+        while df.shape[1] < 7:
+            df[df.shape[1]] = ""
         df.iloc[fila_index, columna_index] = int(nueva_cantidad)
         df.to_excel(ARCHIVO_EXCEL, index=False, header=False)
         return True
@@ -182,12 +185,16 @@ else:
                             filas_coincidentes = []
                             for idx, fila in df_catalogo.iterrows():
                                 lista_celdas = fila.values.tolist()
-                                if len(lista_celdas) < 7:
+                                if len(lista_celdas) < 3:
                                     continue
                                 
-                                # Columna E (4) es código delantero, Columna G (6) es código trasero
-                                cod_del_celda = str(lista_celdas[4]).strip().lower()
-                                cod_tra_celda = str(lista_celdas[6]).strip().lower()
+                                val_marca = str(lista_celdas[0]).strip().lower()
+                                if "hoja de" in val_marca or "catálogo" in val_marca or "marca" in val_marca:
+                                    continue
+
+                                # Mapear de forma segura aunque falten columnas en filas cortas de Excel
+                                cod_del_celda = str(lista_celdas[4]).strip().lower() if len(lista_celdas) > 4 else ""
+                                cod_tra_celda = str(lista_celdas[6]).strip().lower() if len(lista_celdas) > 6 else ""
                                 
                                 if (txt_codigo in cod_del_celda) or (txt_codigo in cod_tra_celda):
                                     filas_coincidentes.append({"index": idx, "data": lista_celdas})
@@ -206,13 +213,5 @@ else:
                 fila_idx = item["index"]
                 celdas = item["data"]
                 
-                marca_head = str(celdas[0]).strip().upper() if len(celdas) > 0 else "MARCA"
+                marca_head = str(celdas[0]).strip().upper() if len(celdas) > 0 else "MARCA NO ASIGNADA"
                 modelo_sub = str(celdas[1]).strip() if len(celdas) > 1 else "N/A"
-                anio_sub = str(celdas[2]).strip() if len(celdas) > 2 else "N/A"
-                
-                stock_del = str(celdas[3]).strip() if len(celdas) > 3 else "0"
-                cod_delantero = str(celdas[4]).strip() if len(celdas) > 4 else ""
-                stock_tra = str(celdas[5]).strip() if len(celdas) > 5 else "0"
-                cod_trasero = str(celdas[6]).strip() if len(celdas) > 6 else ""
-                
-                cant_del = limpiar_entero(stock_del)
