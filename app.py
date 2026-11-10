@@ -168,7 +168,6 @@ else:
                 modelo_sub = str(celdas[1]).strip() if len(celdas) > 1 else "N/A"
                 anio_sub = str(celdas[2]).strip() if len(celdas) > 2 else "N/A"
                 
-                # Mapeo de columnas según el nuevo Excel de 7 columnas
                 stock_del = str(celdas[3]).strip() if len(celdas) > 3 else "0"
                 cod_delantero = str(celdas[4]).strip() if len(celdas) > 4 else ""
                 stock_tra = str(celdas[5]).strip() if len(celdas) > 5 else "0"
@@ -184,7 +183,6 @@ else:
                     str_m.markdown(f"### 🚘 {marca_head}")
                     str_m.markdown(f"**Modelo/Motor:** {modelo_sub} | **Años:** {anio_sub}")
                     
-                    # Selector de cantidad de piezas a modificar
                     unidades_cambio = str_m.number_input("Cantidad de piezas a modificar:", min_value=1, value=1, step=1, key=f"cant_{fila_idx}")
                     
                     col_del, col_tra = str_m.columns(2)
@@ -210,3 +208,4 @@ else:
                         with c_del_sumar:
                             if usuario_activo in USUARIOS_PERMITIDOS_SUMAR:
                                 if str_m.button("➕ Agregar", key=f"del_sum_{fila_idx}", use_container_width=True):
+                                    if actualizar_stock_en_excel(fila_idx, 3, cant_del + unidades_cambio):
