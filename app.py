@@ -52,7 +52,6 @@ def cargar_catalogo_real():
 def actualizar_stock_en_excel(fila_index, columna_index, nueva_cantidad):
     try:
         df = pd.read_excel(ARCHIVO_EXCEL, header=None)
-        # Asegurar dimensiones mínimas del DataFrame
         while df.shape[1] <= columna_index:
             df[df.shape[1]] = ""
         df.iloc[fila_index, columna_index] = int(nueva_cantidad)
@@ -213,9 +212,11 @@ else:
             str_m.success(f"📦 {len(resultados)} registro(s) encontrado(s)")
             
             for item in resultados:
-                # Extracción robusta de llave/valor previniendo desajustes de tipo
-                fila_idx = item.get("index") if isinstance(item, dict) else item[0]
-                celdas = item.get("data") if isinstance(item, dict) else item[1]
+                fila_idx = item.get("index") if isinstance(item, dict) else item
+                celdas = item.get("data") if isinstance(item, dict) else item
                 
-                # Asegurar de forma dinámica que la lista tenga al menos las 7 celdas requeridas
-                while len(celdas) < 7:
+                # RELLENO PLANO DE SEGURIDAD INTERNA (SIN BUCLE WHILE)
+                if len(celdas) < 7:
+                    celdas = celdas + [""] * (7 - len(celdas))
+                
+                marca_head = str(celdas[0]).strip().upper() if celdas[0] else "MARCA NO ASIGNADA"
