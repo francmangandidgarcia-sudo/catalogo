@@ -52,7 +52,6 @@ def cargar_catalogo_real():
 def actualizar_stock_en_excel(fila_index, columna_index, nueva_cantidad):
     try:
         df = pd.read_excel(ARCHIVO_EXCEL, header=None)
-        # Asegurar dimensiones mínimas del DataFrame
         while df.shape[1] < 7:
             df[df.shape[1]] = ""
         df.iloc[fila_index, columna_index] = int(nueva_cantidad)
@@ -129,7 +128,7 @@ else:
         tab_vehiculo, tab_codigo = str_m.tabs(["🚗 Buscar por Vehículo", "🔢 Buscar por Código (Solo Admin)"])
     else:
         tab_vehicules_list = str_m.tabs(["🚗 Buscar por Vehículo"])
-        tab_vehiculo = tab_vehicules_list[0]
+        tab_vehiculo = tab_vehicules_list
         tab_codigo = None
 
     # --- PESTAÑA A: BUSCADOR POR VEHÍCULO (PARA TODOS) ---
@@ -193,7 +192,7 @@ else:
                                 if "hoja de" in val_marca or "catálogo" in val_marca or "marca" in val_marca:
                                     continue
 
-                                # Mapear las columnas E (índice 4) y G (índice 6) de forma segura
+                                # Capturar de forma segura las celdas de códigos (Eje Delantero columna 5, Trasero columna 7)
                                 cod_del_celda = str(lista_celdas[4]).strip().lower() if len(lista_celdas) > 4 else ""
                                 cod_tra_celda = str(lista_celdas[6]).strip().lower() if len(lista_celdas) > 6 else ""
                                 
@@ -203,8 +202,9 @@ else:
                             str_m.rerun()
 
     # -------------------------------------------------------
-    # VISOR DE RESULTADOS PERSISTENTE (FUERA DE LAS PESTAÑAS)
+    # VISOR DE RESULTADOS PERSISTENTE
     # -------------------------------------------------------
+    str_m.write("---")
     str_m.write("### Resultados del Catálogo")
     resultados = str_m.session_state["resultados_busqueda"]
     
