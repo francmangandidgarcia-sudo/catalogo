@@ -105,7 +105,7 @@ if not str_m.session_state["autenticado"]:
                 str_m.error("❌ Usuario o contraseña incorrectos. Intente de nuevo.")
 
 # -------------------------------------------------------
-# PANTALLA 2: EL BUSCADOR GESTIONADO POR ROLES Y STOCK
+# PANTALLA 2: EL BUSCADOR Y GESTOR DE STOCK
 # -------------------------------------------------------
 else:
     usuario_activo = str_m.session_state["usuario_actual"]
@@ -123,15 +123,14 @@ else:
         str_m.title("🚘 Catálogo")
         str_m.caption("Buscador Local Automotriz")
 
-    # CONFIGURACIÓN DINÁMICA DE PESTAÑAS SEGÚN EL USUARIO
     if usuario_activo == "admin":
         tab_vehiculo, tab_codigo = str_m.tabs(["🚗 Buscar por Vehículo", "🔢 Buscar por Código (Solo Admin)"])
     else:
         tab_vehicules_list = str_m.tabs(["🚗 Buscar por Vehículo"])
-        tab_vehiculo = tab_vehicules_list
+        tab_vehiculo = tab_vehicules_list[0]
         tab_codigo = None
 
-    # --- PESTAÑA A: BUSCADOR POR VEHÍCULO (PARA TODOS) ---
+    # --- PESTAÑA A: BUSCADOR POR VEHÍCULO ---
     with tab_vehiculo:
         with str_m.form("buscador_vehiculo_form"):
             txt_marca = str_m.text_input("1. Marca (ej: Toyota, Acura...)").strip().lower()
@@ -166,9 +165,8 @@ else:
                             if cumple_marca and cumple_modelo and cumple_anio:
                                 filas_coincidentes.append({"index": idx, "data": lista_celdas})
                         str_m.session_state["resultados_busqueda"] = filas_coincidentes
-                        str_m.rerun()
 
-    # --- PESTAÑA B: BUSCADOR POR CÓDIGO (SOLO VISIBLE SI ES ADMIN) ---
+    # --- PESTAÑA B: BUSCADOR POR CÓDIGO ---
     if tab_codigo is not None:
         with tab_codigo:
             with str_m.form("buscador_codigo_form"):
@@ -192,14 +190,12 @@ else:
                                 if "hoja de" in val_marca or "catálogo" in val_marca or "marca" in val_marca:
                                     continue
 
-                                # Capturar de forma segura las celdas de códigos (Eje Delantero columna 5, Trasero columna 7)
                                 cod_del_celda = str(lista_celdas[4]).strip().lower() if len(lista_celdas) > 4 else ""
                                 cod_tra_celda = str(lista_celdas[6]).strip().lower() if len(lista_celdas) > 6 else ""
                                 
                                 if (txt_codigo in cod_del_celda) or (txt_codigo in cod_tra_celda):
                                     filas_coincidentes.append({"index": idx, "data": lista_celdas})
                             str_m.session_state["resultados_busqueda"] = filas_coincidentes
-                            str_m.rerun()
 
     # -------------------------------------------------------
     # VISOR DE RESULTADOS PERSISTENTE
@@ -217,3 +213,8 @@ else:
                 celdas = item["data"]
                 
                 marca_head = str(celdas[0]).strip().upper() if len(celdas) > 0 else "MARCA NO ASIGNADA"
+                modelo_sub = str(celdas[1]).strip() if len(celdas) > 1 else "N/A"
+                anio_sub = str(celdas[2]).strip() if len(celdas) > 2 else "N/A"
+                
+                stock_del = str(celdas[3]).strip() if len(celdas) > 3 else "0"
+                cod_delantero = str(celdas[4]).strip() if len(celdas) > 4 else ""
