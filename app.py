@@ -201,7 +201,7 @@ else:
                             str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
     # -------------------------------------------------------
-    # VISOR DE RESULTADOS PERSISTENTE Y SEGURO (MÉTODO PLANO)
+    # VISOR DE RESULTADOS PERSISTENTE Y SEGURO RECTIFICADO
     # -------------------------------------------------------
     str_m.write("---")
     str_m.write("### Resultados del Catálogo")
@@ -216,8 +216,8 @@ else:
                     continue
                     
                 fila_idx = item["index"]
-                celdas = item["data"]
+                lista_datos = item["data"]
                 
-                # Relleno de seguridad plano de una sola línea (Inmune a fallos)
-                celdas_completas = celdas + [""] * (7 - len(celdas)) if len(celdas) < 7 else celdas
+                # Relleno de seguridad plano de una sola línea
+                celdas_completas = lista_datos + [""] * (7 - len(lista_datos)) if len(lista_datos) < 7 else lista_datos
                 
