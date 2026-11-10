@@ -52,13 +52,13 @@ def cargar_catalogo_real():
 def actualizar_stock_en_excel(fila_index, columna_index, nueva_cantidad):
     try:
         df = pd.read_excel(ARCHIVO_EXCEL, header=None)
-        while df.shape[1] < 7:
+        while df.shape[1] <= columna_index:
             df[df.shape[1]] = ""
         df.iloc[fila_index, columna_index] = int(nueva_cantidad)
         df.to_excel(ARCHIVO_EXCEL, index=False, header=False)
         return True
     except PermissionError:
-        str_m.error("❌ Archivo 'datos.xlsx' abierto en otra PC. Ciérralo y reintenta.")
+        str_m.error("❌ Archivo 'datos.xlsx' bloqueado. Intente de nuevo.")
         return False
     except Exception as e:
         str_m.error(f"Error inesperado al guardar en Excel: {e}")
@@ -77,7 +77,7 @@ def validar_anio(texto_celda, anio_buscado):
     return False
 
 def limpiar_entero(valor):
-    if not valor or str(valor).lower() == "nan":
+    if not valor or str(valor).lower() == "nan" or str(valor).strip() == "":
         return 0
     try:
         return int(float(str(valor).strip()))
@@ -127,7 +127,7 @@ else:
         tab_vehiculo, tab_codigo = str_m.tabs(["🚗 Buscar por Vehículo", "🔢 Buscar por Código (Solo Admin)"])
     else:
         tab_vehicules_list = str_m.tabs(["🚗 Buscar por Vehículo"])
-        tab_vehiculo = tab_vehicules_list[0]
+        tab_vehiculo = tab_vehicules_list
         tab_codigo = None
 
     # --- PESTAÑA A: BUSCADOR POR VEHÍCULO ---
@@ -190,15 +190,18 @@ else:
                                 if "hoja de" in val_marca or "catálogo" in val_marca or "marca" in val_marca:
                                     continue
 
-                                cod_del_celda = str(lista_celdas[4]).strip().lower() if len(lista_celdas) > 4 else ""
-                                cod_tra_celda = str(lista_celdas[6]).strip().lower() if len(lista_celdas) > 6 else ""
+                                coincidencia_codigo = False
+                                for celda in lista_celdas:
+                                    if txt_codigo in str(celda).strip().lower():
+                                        coincidencia_codigo = True
+                                        break
                                 
-                                if (txt_codigo in cod_del_celda) or (txt_codigo in cod_tra_celda):
+                                if coincidencia_codigo:
                                     filas_coincidentes.append({"index": idx, "data": lista_celdas})
                             str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
     # -------------------------------------------------------
-    # VISOR DE RESULTADOS PERSISTENTE
+    # VISOR DE RESULTADOS BLINDADO COMPLEMENTARIO
     # -------------------------------------------------------
     str_m.write("---")
     str_m.write("### Resultados del Catálogo")
@@ -212,9 +215,9 @@ else:
                 fila_idx = item["index"]
                 celdas = item["data"]
                 
-                marca_head = str(celdas[0]).strip().upper() if len(celdas) > 0 else "MARCA NO ASIGNADA"
-                modelo_sub = str(celdas[1]).strip() if len(celdas) > 1 else "N/A"
-                anio_sub = str(celdas[2]).strip() if len(celdas) > 2 else "N/A"
+                # RELLENO DE SEGURIDAD AUTOMÁTICO: Rellena celdas faltantes en tiempo de ejecución
+                while len(celdas) < 7:
+                    celdas.append("")
                 
-                stock_del = str(celdas[3]).strip() if len(celdas) > 3 else "0"
-                cod_delantero = str(celdas[4]).strip() if len(celdas) > 4 else ""
+                marca_head = str(celdas[0]).strip().upper() if celdas[0] else "MARCA NO ASIGNADA"
+                modelo_sub = str(celdas[1]).strip() if celdas[1] else "N/A"
