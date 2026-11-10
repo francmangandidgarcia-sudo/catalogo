@@ -164,9 +164,9 @@ else:
                 fila_idx = item["index"]
                 celdas = item["data"]
                 
-                marca_head = str(celdas[0]).strip().upper() if celdas[0] else "MARCA"
-                modelo_sub = str(celdas[1]).strip() if celdas[1] else "N/A"
-                anio_sub = str(celdas[2]).strip() if celdas[2] else "N/A"
+                marca_head = str(celdas[0]).strip().upper() if len(celdas) > 0 else "MARCA"
+                modelo_sub = str(celdas[1]).strip() if len(celdas) > 1 else "N/A"
+                anio_sub = str(celdas[2]).strip() if len(celdas) > 2 else "N/A"
                 
                 # Mapeo de columnas según el nuevo Excel de 7 columnas
                 stock_del = str(celdas[3]).strip() if len(celdas) > 3 else "0"
@@ -209,3 +209,4 @@ else:
                                     str_m.error("No hay stock suficiente")
                         with c_del_sumar:
                             if usuario_activo in USUARIOS_PERMITIDOS_SUMAR:
+                                if str_m.button("➕ Agregar", key=f"del_sum_{fila_idx}", use_container_width=True):
