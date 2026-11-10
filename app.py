@@ -126,7 +126,7 @@ else:
         tab_vehiculo, tab_codigo = str_m.tabs(["🚗 Buscar por Vehículo", "🔢 Buscar por Código (Solo Admin)"])
     else:
         tab_vehicules_list = str_m.tabs(["🚗 Buscar por Vehículo"])
-        tab_vehiculo = tab_vehicules_list[0]
+        tab_vehiculo = tab_vehicules_list
         tab_codigo = None
 
     # --- PESTAÑA A: BUSCADOR POR VEHÍCULO (PARA TODOS) ---
@@ -193,7 +193,7 @@ else:
                             str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
     # -------------------------------------------------------
-    # DESPLIEGUE DE RESULTADOS SECUENCIAL
+    # DESPLIEGUE DE RESULTADOS SECUENCIAL (DISEÑO PLANO INMUNE)
     # -------------------------------------------------------
     resultados = str_m.session_state["resultados_busqueda"]
     
@@ -217,4 +217,4 @@ else:
                 cant_del = limpiar_entero(stock_del)
                 cant_tra = limpiar_entero(stock_tra)
                 
-                with str_m.container(border=True):
+                # Encabezado del Producto
