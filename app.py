@@ -95,7 +95,7 @@ if not str_m.session_state["autenticado"]:
                 str_m.error("❌ Usuario o contraseña incorrectos. Intente de nuevo.")
 
 # -------------------------------------------------------
-# PANTALLA 2: EL BUSCADOR Y GESTOR DE STOCK DOBLE
+# PANTALLA 2: EL BUSCADOR GESTIONADO POR ROLES Y GESTOR DE STOCK
 # -------------------------------------------------------
 else:
     usuario_activo = str_m.session_state["usuario_actual"]
@@ -113,46 +113,80 @@ else:
         str_m.title("🚘 Catálogo")
         str_m.caption("Buscador Local Automotriz")
 
-    with str_m.form("buscador_form"):
-        txt_marca = str_m.text_input("1. Marca (ej: Acura, Audi...)").strip().lower()
-        txt_modelo = str_m.text_input("2. Modelo / Motor (ej: Integra...)").strip().lower()
-        txt_anio = str_m.text_input("3. Año exacto (ej: 1990, 1998...)").strip()
-        btn_buscar = str_m.form_submit_button("🔍 Buscar Repuesto", use_container_width=True)
-        
-        if btn_buscar:
-            if not txt_marca and not txt_modelo and not txt_anio:
-                str_m.warning("⚠️ Escribe al menos un dato para filtrar.")
-                str_m.session_state["resultados_busqueda"] = None
-            else:
-                df_catalogo = cargar_catalogo_real()
-                
-                if df_catalogo is None:
+    # CONFIGURACIÓN DINÁMICA DE PESTAÑAS SEGÚN EL USUARIO
+    if usuario_activo == "admin":
+        tab_vehiculo, tab_codigo = str_m.tabs(["🚗 Buscar por Vehículo", "🔢 Buscar por Código (Solo Admin)"])
+    else:
+        # Si no es admin, creamos una lista con un solo elemento para no romper la interfaz móvil
+        tab_vehiculo = str_m.tabs(["🚗 Buscar por Vehículo"])[0]
+        tab_codigo = None
+
+    # --- PESTAÑA A: BUSCADOR POR VEHÍCULO (PARA TODOS) ---
+    with tab_vehiculo:
+        with str_m.form("buscador_vehiculo_form"):
+            txt_marca = str_m.text_input("1. Marca (ej: Toyota, Acura...)").strip().lower()
+            txt_modelo = str_m.text_input("2. Modelo / Motor (ej: Yaris...)").strip().lower()
+            txt_anio = str_m.text_input("3. Año exacto (ej: 2015...)").strip()
+            btn_buscar_v = str_m.form_submit_button("🔍 Buscar por Vehículo", use_container_width=True)
+            
+            if btn_buscar_v:
+                if not txt_marca and not txt_modelo and not txt_anio:
+                    str_m.warning("⚠️ Escribe al menos un dato para filtrar.")
                     str_m.session_state["resultados_busqueda"] = None
                 else:
-                    filas_coincidentes = []
-                    for idx, fila in df_catalogo.iterrows():
-                        lista_celdas = fila.values.tolist()
-                        if len(lista_celdas) < 3:
-                            continue
-                        
-                        val_marca = str(lista_celdas[0]).strip().lower()
-                        val_modelo = str(lista_celdas[1]).strip().lower()
-                        val_anio_celda = str(lista_celdas[2]).strip()
-                        
-                        if "hoja de" in val_marca or "catálogo" in val_marca or "marca" in val_marca:
-                            continue
+                    df_catalogo = cargar_catalogo_real()
+                    if df_catalogo is not None:
+                        filas_coincidentes = []
+                        for idx, fila in df_catalogo.iterrows():
+                            lista_celdas = fila.values.tolist()
+                            if len(lista_celdas) < 3:
+                                continue
                             
-                        cumple_marca = not txt_marca or (txt_marca in val_marca)
-                        cumple_modelo = not txt_modelo or (txt_modelo in val_modelo)
-                        cumple_anio = not txt_anio or validar_anio(val_anio_celda, txt_anio)
-                        
-                        if cumple_marca and cumple_modelo and cumple_anio:
-                            filas_coincidentes.append({"index": idx, "data": lista_celdas})
-                    
-                    str_m.session_state["resultados_busqueda"] = filas_coincidentes
+                            val_marca = str(lista_celdas[0]).strip().lower()
+                            val_modelo = str(lista_celdas[1]).strip().lower()
+                            val_anio_celda = str(lista_celdas[2]).strip()
+                            
+                            if "hoja de" in val_marca or "catálogo" in val_marca or "marca" in val_marca:
+                                continue
+                                
+                            cumple_marca = not txt_marca or (txt_marca in val_marca)
+                            cumple_modelo = not txt_modelo or (txt_modelo in val_modelo)
+                            cumple_anio = not txt_anio or validar_anio(val_anio_celda, txt_anio)
+                            
+                            if cumple_marca and cumple_modelo and cumple_anio:
+                                filas_coincidentes.append({"index": idx, "data": lista_celdas})
+                        str_m.session_state["resultados_busqueda"] = filas_coincidentes
+
+    # --- PESTAÑA B: BUSCADOR POR CÓDIGO (PROTEGIDA - SOLO VISIBLE SI ES ADMIN) ---
+    if tab_codigo is not None:
+        with tab_codigo:
+            with str_m.form("buscador_codigo_form"):
+                txt_codigo = str_m.text_input("Ingrese el código del repuesto (ej: WVA-24332, 24332...)").strip().lower()
+                btn_buscar_c = str_m.form_submit_button("🔍 Buscar por Código", use_container_width=True)
+                
+                if btn_buscar_c:
+                    if not txt_codigo:
+                        str_m.warning("⚠️ Escribe un código para buscar.")
+                        str_m.session_state["resultados_busqueda"] = None
+                    else:
+                        df_catalogo = cargar_catalogo_real()
+                        if df_catalogo is not None:
+                            filas_coincidentes = []
+                            for idx, fila in df_catalogo.iterrows():
+                                lista_celdas = fila.values.tolist()
+                                if len(lista_celdas) < 7:
+                                    continue
+                                
+                                # Columna E (4) es código delantero, Columna G (6) es código trasero
+                                cod_del_celda = str(lista_celdas[4]).strip().lower()
+                                cod_tra_celda = str(lista_celdas[6]).strip().lower()
+                                
+                                if (txt_codigo in cod_del_celda) or (txt_codigo in cod_tra_celda):
+                                    filas_coincidentes.append({"index": idx, "data": lista_celdas})
+                            str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
     # -------------------------------------------------------
-    # DESPLIEGUE DE RESULTADOS (DISEÑO SECUENCIAL ANTI-INDENTACIÓN)
+    # DESPLIEGUE DE RESULTADOS SECUENCIAL A PRUEBA DE FALLOS
     # -------------------------------------------------------
     resultados = str_m.session_state["resultados_busqueda"]
     
@@ -175,40 +209,3 @@ else:
                 
                 try:
                     cant_del = int(stock_del) if stock_del and stock_del.lower() != "nan" else 0
-                    cant_tra = int(stock_tra) if stock_tra and stock_tra.lower() != "nan" else 0
-                except ValueError:
-                    cant_del, cant_tra = 0, 0
-                
-                with str_m.container(border=True):
-                    str_m.markdown(f"### 🚘 {marca_head}")
-                    str_m.markdown(f"**Modelo/Motor:** {modelo_sub} | **Años:** {anio_sub}")
-                    
-                    unidades_cambio = str_m.number_input("Cantidad de piezas a modificar:", min_value=1, value=1, step=1, key=f"cant_{fila_idx}")
-                    
-                    str_m.markdown("---")
-                    
-                    # --- BLOQUE SEGURO DELANTERA ---
-                    txt_c_del = cod_delantero if cod_delantero and cod_delantero.lower() != 'nan' else 'No asignada'
-                    str_m.info(f"🚘 **Pastilla Delantera:** {txt_c_del} | Existencia: **{cant_del} u.**")
-                    
-                    if cant_del == 0:
-                        str_m.warning("⚠️ Sin stock delantero disponible.")
-                        
-                    btn_del_restar = str_m.button("➖ Restar Delantera", key=f"del_res_{fila_idx}", use_container_width=True)
-                    if btn_del_restar and cant_del >= unidades_cambio:
-                        actualizar_stock_en_excel(fila_idx, 3, cant_del - unidades_cambio)
-                        str_m.session_state["resultados_busqueda"] = None
-                        str_m.rerun()
-                    elif btn_del_restar:
-                        str_m.error("Error: No puedes restar más unidades de las disponibles en el stock delantero.")
-                        
-                    if usuario_activo in USUARIOS_PERMITIDOS_SUMAR:
-                        btn_del_sumar = str_m.button("➕ Agregar Delantera", key=f"del_sum_{fila_idx}", use_container_width=True)
-                        if btn_del_sumar:
-                            actualizar_stock_en_excel(fila_idx, 3, cant_del + unidades_cambio)
-                            str_m.session_state["resultados_busqueda"] = None
-                            str_m.rerun()
-                            
-                    str_m.markdown("---")
-                    
-                    # --- BLOQUE SEGURO TRASERA ---
