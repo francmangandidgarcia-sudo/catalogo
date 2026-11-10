@@ -212,12 +212,12 @@ else:
             str_m.success(f"📦 {len(resultados)} registro(s) encontrado(s)")
             
             for item in resultados:
-                # Comprobación de seguridad para evitar saltos por filas fantasma
                 if not isinstance(item, dict) or "data" not in item:
                     continue
                     
                 fila_idx = item["index"]
                 celdas = item["data"]
                 
-                # Relleno de seguridad
-                if len(celdas) < 7:
+                # Relleno de seguridad plano de una sola línea (Inmune a fallos)
+                celdas_completas = celdas + [""] * (7 - len(celdas)) if len(celdas) < 7 else celdas
+                
