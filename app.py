@@ -52,8 +52,8 @@ def cargar_catalogo_real():
 def actualizar_stock_en_excel(fila_index, columna_index, nueva_cantidad):
     try:
         df = pd.read_excel(ARCHIVO_EXCEL, header=None)
-        while df.shape[1] <= columna_index:
-            df[df.shape[1]] = ""
+        while df.shape <= columna_index:
+            df[df.shape] = ""
         df.iloc[fila_index, columna_index] = int(nueva_cantidad)
         df.to_excel(ARCHIVO_EXCEL, index=False, header=False)
         return True
@@ -201,7 +201,7 @@ else:
                             str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
     # -------------------------------------------------------
-    # VISOR DE RESULTADOS PERSISTENTE Y SEGURO
+    # VISOR DE RESULTADOS PERSISTENTE Y SEGURO Corregido
     # -------------------------------------------------------
     str_m.write("---")
     str_m.write("### Resultados del Catálogo")
@@ -212,11 +212,11 @@ else:
             str_m.success(f"📦 {len(resultados)} registro(s) encontrado(s)")
             
             for item in resultados:
-                fila_idx = item.get("index") if isinstance(item, dict) else item
-                celdas = item.get("data") if isinstance(item, dict) else item
+                # CORRECCIÓN CLAVE: Extraer de forma segura los valores desde el diccionario estructurado
+                fila_idx = item["index"]
+                celdas = item["data"]
                 
-                # RELLENO PLANO DE SEGURIDAD INTERNA (SIN BUCLE WHILE)
+                # Relleno de seguridad para evitar desajustes en el tamaño de la lista
                 if len(celdas) < 7:
                     celdas = celdas + [""] * (7 - len(celdas))
                 
-                marca_head = str(celdas[0]).strip().upper() if celdas[0] else "MARCA NO ASIGNADA"
