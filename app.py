@@ -56,7 +56,7 @@ def actualizar_stock_en_excel(fila_index, columna_index, nueva_cantidad):
         df.to_excel(ARCHIVO_EXCEL, index=False, header=False)
         return True
     except PermissionError:
-        str_m.error("❌ No se pudo guardar. Por favor, CIERRA el archivo 'datos.xlsx' y reintenta.")
+        str_m.error("❌ Archivo 'datos.xlsx' abierto en otra PC. Ciérralo y reintenta.")
         return False
     except Exception as e:
         str_m.error(f"Error inesperado al guardar en Excel: {e}")
@@ -152,7 +152,7 @@ else:
                     str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
     # -------------------------------------------------------
-    # DESPLIEGUE DE RESULTADOS (DISEÑO ANTI-ERRORES DE INDENTACIÓN)
+    # DESPLIEGUE DE RESULTADOS (DISEÑO SECUENCIAL ANTI-INDENTACIÓN)
     # -------------------------------------------------------
     resultados = str_m.session_state["resultados_busqueda"]
     
@@ -185,29 +185,30 @@ else:
                     
                     unidades_cambio = str_m.number_input("Cantidad de piezas a modificar:", min_value=1, value=1, step=1, key=f"cant_{fila_idx}")
                     
-                    col_del, col_tra = str_m.columns(2)
+                    str_m.markdown("---")
                     
-                    # --- LÓGICA PASTILLA DELANTERA ---
-                    with col_del:
-                        str_m.info(f"🚘 **Delantera:**\n{cod_delantero if cod_delantero and cod_delantero.lower() != 'nan' else 'No asignada'}")
-                        if cant_del == 0:
-                            str_m.error("⚠️ Stock Del.: 0 u.")
-                        else:
-                            str_m.markdown(f"📦 Stock Del.: **{cant_del} u.**")
+                    # --- BLOQUE SEGURO DELANTERA ---
+                    txt_c_del = cod_delantero if cod_delantero and cod_delantero.lower() != 'nan' else 'No asignada'
+                    str_m.info(f"🚘 **Pastilla Delantera:** {txt_c_del} | Existencia: **{cant_del} u.**")
+                    
+                    if cant_del == 0:
+                        str_m.warning("⚠️ Sin stock delantero disponible.")
                         
-                        btn_del_restar = str_m.button("➖ Restar", key=f"del_res_{fila_idx}", use_container_width=True)
-                        if btn_del_restar and cant_del >= unidades_cambio:
-                            actualizar_stock_en_excel(fila_idx, 3, cant_del - unidades_cambio)
+                    btn_del_restar = str_m.button("➖ Restar Delantera", key=f"del_res_{fila_idx}", use_container_width=True)
+                    if btn_del_restar and cant_del >= unidades_cambio:
+                        actualizar_stock_en_excel(fila_idx, 3, cant_del - unidades_cambio)
+                        str_m.session_state["resultados_busqueda"] = None
+                        str_m.rerun()
+                    elif btn_del_restar:
+                        str_m.error("Error: No puedes restar más unidades de las disponibles en el stock delantero.")
+                        
+                    if usuario_activo in USUARIOS_PERMITIDOS_SUMAR:
+                        btn_del_sumar = str_m.button("➕ Agregar Delantera", key=f"del_sum_{fila_idx}", use_container_width=True)
+                        if btn_del_sumar:
+                            actualizar_stock_en_excel(fila_idx, 3, cant_del + unidades_cambio)
                             str_m.session_state["resultados_busqueda"] = None
                             str_m.rerun()
-                        elif btn_del_restar:
-                            str_m.error("No hay stock suficiente")
                             
-                        if usuario_activo in USUARIOS_PERMITIDOS_SUMAR:
-                            if str_m.button("➕ Agregar", key=f"del_sum_{fila_idx}", use_container_width=True):
-                                actualizar_stock_en_excel(fila_idx, 3, cant_del + unidades_cambio)
-                                str_m.session_state["resultados_busqueda"] = None
-                                str_m.rerun()
+                    str_m.markdown("---")
                     
-                    # --- LÓGICA PASTILLA TRASERA ---
-                    with col_tra:
+                    # --- BLOQUE SEGURO TRASERA ---
