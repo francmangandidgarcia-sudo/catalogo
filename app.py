@@ -9,9 +9,6 @@ str_m.set_page_config(
     layout="centered"
 )
 
-# =======================================================
-# CONFIGURACIÓN DE USUARIOS Y PRIVILEGIOS
-# =======================================================
 USUARIOS_REGISTRADOS = {
     "admin": "admin",
     "leticia": "aceitera2026",
@@ -20,9 +17,7 @@ USUARIOS_REGISTRADOS = {
     "jackelin": "Repuesto2026"
 }
 
-# SOLO admin y leticia pueden ver la pestaña por código y SUMAR inventario
 USUARIOS_PRIVILEGIADOS = ["admin", "leticia"]
-
 ARCHIVO_EXCEL = "datos.xlsx"
 
 if "autenticado" not in str_m.session_state:
@@ -32,9 +27,6 @@ if "usuario_actual" not in str_m.session_state:
 if "resultados_busqueda" not in str_m.session_state:
     str_m.session_state["resultados_busqueda"] = None
 
-# =======================================================
-# FUNCIONES DE CONTROL DE EXCEL
-# =======================================================
 def cargar_catalogo_real():
     if not os.path.exists(ARCHIVO_EXCEL):
         return None
@@ -126,7 +118,6 @@ else:
         else:
             str_m.caption("Modo Ventas (Solo Consulta y Descuento)")
 
-    # Pestañas dinámicas según el privilegio
     if es_privilegiado:
         tab_vehiculo, tab_codigo = str_m.tabs(["🚗 Buscar por Vehículo", "🔢 Ingreso por Código"])
     else:
@@ -135,11 +126,11 @@ else:
             tab_vehiculo = t
         tab_codigo = None
 
-    # --- PESTAÑA A: BUSCAR POR VEHÍCULO (PARA TODOS) ---
+    # --- PESTAÑA A: VEHÍCULO ---
     with tab_vehiculo:
         with str_m.form("buscador_vehiculo_form"):
             txt_marca = str_m.text_input("1. Marca (ej: Toyota, Kia...)").strip().lower()
-            txt_modelo = str_m.text_input("2. Modelo / Motor (ej: Corolla, Soul...)").strip().lower()
+            txt_modelo = str_m.text_input("2. Modelo / Motor (ej: Corolla, 22 r...)").strip().lower()
             txt_anio = str_m.text_input("3. Año exacto (ej: 2015...)").strip()
             btn_buscar_v = str_m.form_submit_button("🔍 Buscar por Vehículo", use_container_width=True)
             
@@ -172,7 +163,7 @@ else:
                                 filas_coincidentes.append({"index": int(idx), "data": lista_celdas, "modo": "vehiculo"})
                         str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
-    # --- PESTAÑA B: INGRESO POR CÓDIGO (SOLO ADMIN Y LETICIA) ---
+    # --- PESTAÑA B: CÓDIGO (SOLO ADMIN Y LETICIA) ---
     if tab_codigo is not None:
         with tab_codigo:
             with str_m.form("buscador_codigo_form"):
@@ -206,7 +197,7 @@ else:
                             str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
     # -------------------------------------------------------
-    # VISOR DE RESULTADOS
+    # VISOR DIRECTO EN PANTALLA (GARANTÍA DE RENDERIZADO)
     # -------------------------------------------------------
     str_m.write("---")
     str_m.write("### Resultados del Catálogo")
@@ -216,13 +207,19 @@ else:
         if len(resultados) > 0:
             str_m.success(f"📦 {len(resultados)} registro(s) encontrado(s)")
             
-            for item in resultados:
-                fila_idx = item.get("index")
-                datos = item.get("data")
+            # Recorremos cada fila encontrada
+            for i, item in enumerate(resultados):
+                fila_idx = item.get("index", i)
+                datos = item.get("data", [])
                 modo_busqueda = item.get("modo", "vehiculo")
                 
                 m_str, mod_str, a_str, sd_str, cd_str, st_str, ct_str = extraer_columnas_seguras(datos)
                 
-                marca_head = m_str.upper()
-                modelo_sub = mod_str
-                anio_sub = a_str
+                marca_head = m_str.upper() if m_str else "SIN MARCA"
+                modelo_sub = mod_str if mod_str else "N/A"
+                anio_sub = a_str if a_str else "N/A"
+                cant_del = limpiar_entero(sd_str)
+                cod_delantero = cd_str if cd_str and cd_str.lower() != 'nan' else 'No asignada'
+                cant_tra = limpiar_entero(st_str)
+                cod_trasero = ct_str if ct_str and ct_str.lower() != 'nan' else 'No asignada'
+                
