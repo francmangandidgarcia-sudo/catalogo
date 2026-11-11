@@ -16,8 +16,8 @@ USUARIOS_REGISTRADOS = {
     "admin": "admin",
     "leticia": "Aceitera2026",
     "abraham": "Jefe2026",
-    "dailyn": "Lubricante2026",
-    "jackelin": "Repuesto2026"
+    "dailyn": "Lubricantes2026",
+    "jackelin": "Repuestos2026"
 }
 
 # Aquí puedes editar los nombres completos que aparecerán al iniciar sesión
