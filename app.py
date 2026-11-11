@@ -78,8 +78,10 @@ def extraer_7_datos(lista_cruda):
             siete.append(limpiar_texto(item))
     while len(siete) < 7:
         siete.append("")
-    c_marca, c_modelo, c_anio, c_cant_d, c_cod_d, c_cant_t, c_cod_t = siete
-    return c_marca, c_modelo, c_anio, c_cant_d, c_cod_d, c_cant_t, c_cod_t
+    # Orden calibrado según tu Excel real:
+    # A=Marca, B=Modelo, C=Año, D=Cant_Del, E=Cod_Del, F=Cod_Tra, G=Cant_Tra
+    c_marca, c_modelo, c_anio, c_cant_d, c_cod_d, c_cod_t, c_cant_t = siete
+    return c_marca, c_modelo, c_anio, c_cant_d, c_cod_d, c_cod_t, c_cant_t
 
 # -------------------------------------------------------
 # PANTALLA 1: INICIO DE SESIÓN
@@ -103,7 +105,7 @@ if not str_m.session_state["autenticado"]:
                 str_m.error("❌ Usuario o contraseña incorrectos.")
 
 # -------------------------------------------------------
-# PANTALLA 2: EL BUSCADOR Y RAYOS X
+# PANTALLA 2: EL BUSCADOR SEGÚN ROL
 # -------------------------------------------------------
 else:
     usuario_activo = str_m.session_state["usuario_actual"]
@@ -120,7 +122,10 @@ else:
             
     with col_titulo:
         str_m.title("🚘 Catálogo")
-        str_m.caption("Diagnóstico de Columnas Activo")
+        if es_privilegiado:
+            str_m.caption("Modo Administrador (Ingresos y Ventas)")
+        else:
+            str_m.caption("Modo Ventas (Consulta y Descuento)")
 
     if es_privilegiado:
         tab_vehiculo, tab_codigo = str_m.tabs(["🚗 Buscar por Vehículo", "🔢 Ingreso por Código"])
@@ -134,8 +139,8 @@ else:
     with tab_vehiculo:
         with str_m.form("buscador_vehiculo_form"):
             txt_marca = str_m.text_input("1. Marca (ej: Toyota, Kia...)").strip().lower()
-            txt_modelo = str_m.text_input("2. Modelo / Motor (ej: Corolla, Hilux...)").strip().lower()
-            txt_anio = str_m.text_input("3. Año exacto (ej: 2015...)").strip()
+            txt_modelo = str_m.text_input("2. Modelo / Motor (ej: Camry, Hilux...)").strip().lower()
+            txt_anio = str_m.text_input("3. Año exacto (ej: 2004...)").strip()
             btn_buscar_v = str_m.form_submit_button("🔍 Buscar por Vehículo", use_container_width=True)
             
             if btn_buscar_v:
@@ -170,7 +175,7 @@ else:
     if tab_codigo is not None:
         with tab_codigo:
             with str_m.form("buscador_codigo_form"):
-                txt_codigo = str_m.text_input("Código de pastilla a ingresar (ej: WVA-24332...)").strip().lower()
+                txt_codigo = str_m.text_input("Código de pastilla a ingresar (ej: 717, WVA-24332...)").strip().lower()
                 btn_buscar_c = str_m.form_submit_button("🔍 Buscar Código para Sumar", use_container_width=True)
                 
                 if btn_buscar_c:
@@ -186,7 +191,7 @@ else:
                                 if len(lista_celdas) < 3:
                                     continue
                                 
-                                c_marca, _, _, _, c_cod_d, _, c_cod_t = extraer_7_datos(lista_celdas)
+                                c_marca, _, _, _, c_cod_d, c_cod_t, _ = extraer_7_datos(lista_celdas)
                                 val_marca = c_marca.lower()
                                 
                                 if "hoja de" in val_marca or "catálogo" in val_marca or val_marca == "marca" or val_marca == "":
@@ -200,7 +205,7 @@ else:
                             str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
     # -------------------------------------------------------
-    # VISOR CON RAYOS X DE COLUMNAS
+    # VISOR CALIBRADO AL ORDEN REAL DE TU EXCEL
     # -------------------------------------------------------
     str_m.write("---")
     str_m.write("### Resultados del Catálogo")
@@ -215,11 +220,7 @@ else:
                 lista_cruda = item.get("data", [])
                 modo_busqueda = item.get("modo", "vehiculo")
                 
-                # CAJA DE RAYOS X: Muestra las primeras 3 filas crudas exactamente como las ve Python
-                if i == 0:
-                    str_m.warning(f"🔍 **Rayos X Fila 1 (Así lee tu Excel el servidor):** {lista_cruda}")
-                
-                col_marca, col_modelo, col_anio, col_cant_del, col_cod_del, col_cant_tra, col_cod_tra = extraer_7_datos(lista_cruda)
+                col_marca, col_modelo, col_anio, col_cant_del, col_cod_del, col_cod_tra, col_cant_tra = extraer_7_datos(lista_cruda)
                 
                 marca_head = col_marca.upper() if col_marca else "SIN MARCA"
                 modelo_sub = col_modelo if col_modelo else "N/A"
