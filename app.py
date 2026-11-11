@@ -39,13 +39,13 @@ if "resultados_busqueda" not in st.session_state:
     st.session_state["resultados_busqueda"] = None
 
 # =======================================================
-# FUNCIONES DE LECTURA Y BÚSQUEDA (SIN CORCHETES)
+# FUNCIONES DE LECTURA Y BÚSQUEDA (5 COLUMNAS EXACTAS)
 # =======================================================
 def limpiar_texto(valor):
     texto = str(valor).replace("\n", " ").replace("\r", " ").strip()
     return "" if texto.lower() in ["nan", "none", "nat"] else texto
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=10)
 def cargar_catalogo_rapido():
     if not os.path.exists(ARCHIVO_EXCEL):
         return None
@@ -216,8 +216,8 @@ else:
             for marca, modelo, anio, cod_del, cod_tra in resultados:
                 mod_final = modelo if modelo else "N/A"
                 anio_final = anio if anio else "N/A"
-                txt_del = f"🔹 **Delantera:** {cod_del}" if cod_del else "🔹 *Delantera: No asignada*"
-                txt_tra = f"🛑 **Trasera:** {cod_tra}" if cod_tra else "🛑 *Trasera: No asignada*"
+                txt_del = f"🔹 **Delantera:** {cod_del}" if cod_del else "🔹 **Delantera:** No asignada"
+                txt_tra = f"🛑 **Trasera:** {cod_tra}" if cod_tra else "🛑 **Trasera:** No asignada"
                 
                 st.write("---")
                 st.subheader(f"🚘 {marca}")
