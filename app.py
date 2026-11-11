@@ -9,6 +9,9 @@ str_m.set_page_config(
     layout="centered"
 )
 
+# =======================================================
+# CONFIGURACIÓN DE USUARIOS Y PRIVILEGIOS
+# =======================================================
 USUARIOS_REGISTRADOS = {
     "admin": "admin",
     "leticia": "aceitera2026",
@@ -17,7 +20,9 @@ USUARIOS_REGISTRADOS = {
     "jackelin": "Repuesto2026"
 }
 
-USUARIOS_PERMITIDOS_SUMAR = ["admin", "leticia", "abraham"]
+# SOLO admin y leticia pueden ver la pestaña por código y SUMAR inventario
+USUARIOS_PRIVILEGIADOS = ["admin", "leticia"]
+
 ARCHIVO_EXCEL = "datos.xlsx"
 
 if "autenticado" not in str_m.session_state:
@@ -27,6 +32,9 @@ if "usuario_actual" not in str_m.session_state:
 if "resultados_busqueda" not in str_m.session_state:
     str_m.session_state["resultados_busqueda"] = None
 
+# =======================================================
+# FUNCIONES DE CONTROL DE EXCEL
+# =======================================================
 def cargar_catalogo_real():
     if not os.path.exists(ARCHIVO_EXCEL):
         return None
@@ -96,10 +104,11 @@ if not str_m.session_state["autenticado"]:
                 str_m.error("❌ Usuario o contraseña incorrectos.")
 
 # -------------------------------------------------------
-# PANTALLA 2: EL BUSCADOR Y VISOR DIRECTO
+# PANTALLA 2: EL BUSCADOR SEGÚN ROL
 # -------------------------------------------------------
 else:
     usuario_activo = str_m.session_state["usuario_actual"]
+    es_privilegiado = usuario_activo in USUARIOS_PRIVILEGIADOS
     
     col_titulo, col_logout = str_m.columns([0.65, 0.35])
     with col_logout:
@@ -112,17 +121,21 @@ else:
             
     with col_titulo:
         str_m.title("🚘 Catálogo")
-        str_m.caption("Versión Estable Activa")
+        if es_privilegiado:
+            str_m.caption("Modo Administrador (Ingresos y Ventas)")
+        else:
+            str_m.caption("Modo Ventas (Solo Consulta y Descuento)")
 
-    if usuario_activo == "admin":
-        tab_vehiculo, tab_codigo = str_m.tabs(["🚗 Buscar por Vehículo", "🔢 Buscar por Código (Solo Admin)"])
+    # Pestañas dinámicas según el privilegio
+    if es_privilegiado:
+        tab_vehiculo, tab_codigo = str_m.tabs(["🚗 Buscar por Vehículo", "🔢 Ingreso por Código"])
     else:
         tab_lista = str_m.tabs(["🚗 Buscar por Vehículo"])
         for t in tab_lista:
             tab_vehiculo = t
         tab_codigo = None
 
-    # --- PESTAÑA A: VEHÍCULO ---
+    # --- PESTAÑA A: BUSCAR POR VEHÍCULO (PARA TODOS) ---
     with tab_vehiculo:
         with str_m.form("buscador_vehiculo_form"):
             txt_marca = str_m.text_input("1. Marca (ej: Toyota, Kia...)").strip().lower()
@@ -156,15 +169,15 @@ else:
                             cumple_anio = not txt_anio or validar_anio(val_anio_celda, txt_anio)
                             
                             if cumple_marca and cumple_modelo and cumple_anio:
-                                filas_coincidentes.append({"index": int(idx), "data": lista_celdas})
+                                filas_coincidentes.append({"index": int(idx), "data": lista_celdas, "modo": "vehiculo"})
                         str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
-    # --- PESTAÑA B: CÓDIGO (SOLO ADMIN) ---
+    # --- PESTAÑA B: INGRESO POR CÓDIGO (SOLO ADMIN Y LETICIA) ---
     if tab_codigo is not None:
         with tab_codigo:
             with str_m.form("buscador_codigo_form"):
-                txt_codigo = str_m.text_input("Ingrese el código del repuesto (ej: WVA-24332...)").strip().lower()
-                btn_buscar_c = str_m.form_submit_button("🔍 Buscar por Código", use_container_width=True)
+                txt_codigo = str_m.text_input("Código de pastilla a ingresar (ej: WVA-24332...)").strip().lower()
+                btn_buscar_c = str_m.form_submit_button("🔍 Buscar Código para Sumar", use_container_width=True)
                 
                 if btn_buscar_c:
                     if not txt_codigo:
@@ -189,11 +202,11 @@ else:
                                 cod_tra = cod_t_raw.lower()
                                 
                                 if (txt_codigo in cod_del) or (txt_codigo in cod_tra):
-                                    filas_coincidentes.append({"index": int(idx), "data": lista_celdas})
+                                    filas_coincidentes.append({"index": int(idx), "data": lista_celdas, "modo": "codigo"})
                             str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
     # -------------------------------------------------------
-    # VISOR DE RESULTADOS LINEAL (SIN TRY/EXCEPT QUE SE DESALINEEN)
+    # VISOR DE RESULTADOS
     # -------------------------------------------------------
     str_m.write("---")
     str_m.write("### Resultados del Catálogo")
@@ -206,22 +219,10 @@ else:
             for item in resultados:
                 fila_idx = item.get("index")
                 datos = item.get("data")
+                modo_busqueda = item.get("modo", "vehiculo")
                 
                 m_str, mod_str, a_str, sd_str, cd_str, st_str, ct_str = extraer_columnas_seguras(datos)
                 
                 marca_head = m_str.upper()
                 modelo_sub = mod_str
                 anio_sub = a_str
-                
-                cant_del = limpiar_entero(sd_str)
-                cod_delantero = cd_str
-                cant_tra = limpiar_entero(st_str)
-                cod_trasero = ct_str
-                
-                str_m.write("=========================================")
-                str_m.header(f"🚘 {marca_head}")
-                str_m.subheader(f"Modelo: {modelo_sub} | Años: {anio_sub}")
-                
-                unidades_cambio = str_m.number_input("Cantidad de piezas a modificar:", min_value=1, value=1, step=1, key=f"cant_{fila_idx}")
-                
-                # --- DELANTERA ---
