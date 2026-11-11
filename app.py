@@ -42,13 +42,15 @@ def cargar_catalogo_real():
 def actualizar_stock_en_excel(fila_index, columna_index, nueva_cantidad):
     try:
         df = pd.read_excel(ARCHIVO_EXCEL, header=None)
-        while df.shape[1] <= columna_index:
-            df[df.shape[1]] = ""
-        df.iloc[fila_index, columna_index] = int(nueva_cantidad)
+        total_cols = len(df.columns)
+        while total_cols <= columna_index:
+            df[total_cols] = ""
+            total_cols = len(df.columns)
+        df.iat[fila_index, columna_index] = int(nueva_cantidad)
         df.to_excel(ARCHIVO_EXCEL, index=False, header=False)
         return True
     except PermissionError:
-        str_m.error("❌ Archivo 'datos.xlsx' bloqueado. Ciérralo y reintenta.")
+        str_m.error("❌ Archivo 'datos.xlsx' bloqueado. Ciérralo en Excel y reintenta.")
         return False
     except Exception as e:
         str_m.error(f"Error inesperado al guardar: {e}")
@@ -75,8 +77,14 @@ def limpiar_entero(valor):
         return 0
 
 def extraer_7_columnas(lista_cruda):
-    base = list(lista_cruda) + ["", "", "", "", "", "", ""]
-    c_marca, c_modelo, c_anio, c_stock_d, c_cod_d, c_stock_t, c_cod_t = base[:7]
+    # Extrae exactamente las primeras 7 celdas de forma segura sin usar corchetes
+    siete = []
+    for elemento in lista_cruda:
+        if len(siete) < 7:
+            siete.append(str(elemento).strip())
+    while len(siete) < 7:
+        siete.append("")
+    c_marca, c_modelo, c_anio, c_stock_d, c_cod_d, c_stock_t, c_cod_t = siete
     return c_marca, c_modelo, c_anio, c_stock_d, c_cod_d, c_stock_t, c_cod_t
 
 # -------------------------------------------------------
@@ -123,7 +131,8 @@ else:
         tab_vehiculo, tab_codigo = str_m.tabs(["🚗 Buscar por Vehículo", "🔢 Buscar por Código (Solo Admin)"])
     else:
         tab_lista = str_m.tabs(["🚗 Buscar por Vehículo"])
-        tab_vehiculo = tab_lista[0]
+        for t in tab_lista:
+            tab_vehiculo = t
         tab_codigo = None
 
     # --- PESTAÑA A: VEHÍCULO ---
@@ -197,7 +206,7 @@ else:
                             str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
     # -------------------------------------------------------
-    # VISOR DE RESULTADOS PLANO (SIN CONTENEDORES QUE FALLEN)
+    # VISOR DE RESULTADOS PLANO
     # -------------------------------------------------------
     str_m.write("---")
     str_m.write("### Resultados del Catálogo")
@@ -217,9 +226,3 @@ else:
                 modelo_sub = str(mod_str).strip()
                 anio_sub = str(a_str).strip()
                 
-                cant_del = limpiar_entero(sd_str)
-                cod_delantero = str(cd_str).strip()
-                cant_tra = limpiar_entero(st_str)
-                cod_trasero = str(ct_str).strip()
-                
-                # Dibujamos directo en pantalla sin 'with container'
