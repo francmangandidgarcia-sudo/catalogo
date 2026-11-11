@@ -78,7 +78,6 @@ def extraer_7_datos(lista_cruda):
             siete.append(limpiar_texto(item))
     while len(siete) < 7:
         siete.append("")
-    # Orden estándar: A=Marca, B=Modelo, C=Año, D=Cant_Del, E=Cod_Del, F=Cant_Tra, G=Cod_Tra
     c_marca, c_modelo, c_anio, c_cant_d, c_cod_d, c_cant_t, c_cod_t = siete
     return c_marca, c_modelo, c_anio, c_cant_d, c_cod_d, c_cant_t, c_cod_t
 
@@ -204,10 +203,17 @@ else:
                             str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
     # -------------------------------------------------------
-    # VISOR DE RESULTADOS SINCRONIZADO
+    # VISOR DE RESULTADOS
     # -------------------------------------------------------
     str_m.write("---")
-    str_m.write("### Resultados del Catálogo")
+    c_res_tit, c_res_limpiar = str_m.columns([0.7, 0.3])
+    with c_res_tit:
+        str_m.write("### Resultados del Catálogo")
+    with c_res_limpiar:
+        if str_m.button("🧹 Limpiar Pantalla", use_container_width=True):
+            str_m.session_state["resultados_busqueda"] = None
+            str_m.rerun()
+
     resultados = str_m.session_state["resultados_busqueda"]
     
     if resultados is not None:
@@ -221,6 +227,3 @@ else:
                 
                 col_marca, col_modelo, col_anio, col_cant_del, col_cod_del, col_cant_tra, col_cod_tra = extraer_7_datos(lista_cruda)
                 
-                marca_head = col_marca.upper() if col_marca else "SIN MARCA"
-                modelo_sub = col_modelo if col_modelo else "N/A"
-                anio_sub = col_anio if col_anio else "N/A"
