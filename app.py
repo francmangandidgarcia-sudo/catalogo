@@ -14,23 +14,21 @@ st.set_page_config(
 # =======================================================
 USUARIOS_REGISTRADOS = {
     "admin": "admin",
-    "leticia": "aceitera2026",
-    "abraham": "jefe2026",
-    "dailyn": "Lubricante2026",
-    "jackelin": "Repuesto2026"
+    "leticia": "Aceitera2026",
+    "abraham": "Jefe2026",
+    "dailyn": "Lubricantes2026",
+    "jackelin": "Repuestos2026"
 }
 
 NOMBRES_COMPLETOS = {
     "admin": "Administrador General",
     "leticia": "Maria Leticia Osorio",
-    "abraham": "Abraham (Completar Apellido)",
-    "dailyn": "Dailyn (Completar Apellido)",
-    "jackelin": "Jackelin (Completar Apellido)"
+    "abraham": "Luis Abraham Mellado Osorio",
+    "dailyn": "Dailyn Siomara Del Cid",
+    "jackelin": "Jackelin"
 }
 
-# Usuarios con acceso a la pestaña de búsqueda por código
 USUARIOS_BUSQUEDA_CODIGO = ["admin", "leticia"]
-
 ARCHIVO_EXCEL = "datos.xlsx"
 
 if "autenticado" not in st.session_state:
@@ -60,7 +58,6 @@ def extraer_5_columnas(lista_cruda):
     cinco = [limpiar_texto(x) for x in lista_cruda[:5]]
     while len(cinco) < 5:
         cinco.append("")
-    # A=Marca, B=Modelo, C=Año, D=Cod_Delantera, E=Cod_Trasera
     c_marca, c_modelo, c_anio, c_cod_d, c_cod_t = cinco
     return c_marca, c_modelo, c_anio, c_cod_d, c_cod_t
 
@@ -206,7 +203,7 @@ else:
                     st.session_state["resultados_busqueda"] = res
 
     # -------------------------------------------------------
-    # DESPLIEGUE DE RESULTADOS
+    # DESPLIEGUE DE RESULTADOS (PLANO E INMUNE A SANGRÍAS)
     # -------------------------------------------------------
     resultados = st.session_state["resultados_busqueda"]
     
@@ -215,10 +212,10 @@ else:
             st.success(f"📦 {len(resultados)} registro(s) encontrado(s)")
             
             for marca, modelo, anio, cod_del, cod_tra in resultados:
+                txt_del = f"🔹 **Delantera:** {cod_del}" if cod_del else "🔹 *Delantera: No asignada*"
+                txt_tra = f"🛑 **Trasera:** {cod_tra}" if cod_tra else "🛑 *Trasera: No asignada*"
+                mod_final = modelo if modelo else "N/A"
+                anio_final = anio if anio else "N/A"
+                
                 with st.container(border=True):
                     st.markdown(f"### 🚘 {marca}")
-                    st.markdown(f"**Modelo/Motor:** {modelo if modelo else 'N/A'} | **Años:** {anio if anio else 'N/A'}")
-                    
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        if cod_del:
