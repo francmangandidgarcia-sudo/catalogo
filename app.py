@@ -115,7 +115,7 @@ else:
         if es_privilegiado:
             str_m.caption("Modo Administrador (Ingresos y Ventas)")
         else:
-            str_m.caption("Modo Ventas (Solo Consulta y Descuento)")
+            str_m.caption("Modo Ventas (Consulta y Descuento)")
 
     if es_privilegiado:
         tab_vehiculo, tab_codigo = str_m.tabs(["🚗 Buscar por Vehículo", "🔢 Ingreso por Código"])
@@ -147,9 +147,10 @@ else:
                                 continue
                             
                             siete = extraer_columnas_seguras(lista_celdas)
-                            val_marca = siete[0].lower()
-                            val_modelo = siete[1].lower()
-                            val_anio_celda = siete[2]
+                            c_marca, c_modelo, c_anio, _, _, _, _ = siete
+                            val_marca = c_marca.lower()
+                            val_modelo = c_modelo.lower()
+                            val_anio_celda = c_anio
                             
                             if "hoja de" in val_marca or "catálogo" in val_marca or val_marca == "marca" or val_marca == "":
                                 continue
@@ -183,20 +184,21 @@ else:
                                     continue
                                 
                                 siete = extraer_columnas_seguras(lista_celdas)
-                                val_marca = siete[0].lower()
+                                c_marca, _, _, _, c_cod_d, _, c_cod_t = siete
+                                val_marca = c_marca.lower()
                                 
                                 if "hoja de" in val_marca or "catálogo" in val_marca or val_marca == "marca" or val_marca == "":
                                     continue
 
-                                cod_del = siete[4].lower()
-                                cod_tra = siete[6].lower()
+                                cod_del = c_cod_d.lower()
+                                cod_tra = c_cod_t.lower()
                                 
                                 if (txt_codigo in cod_del) or (txt_codigo in cod_tra):
                                     filas_coincidentes.append({"index": int(idx), "data": siete, "modo": "codigo"})
                             str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
     # -------------------------------------------------------
-    # VISOR DIRECTO EN PANTALLA
+    # VISOR COMPLETO CON CÓDIGOS, EXISTENCIAS Y BOTONES
     # -------------------------------------------------------
     str_m.write("---")
     str_m.write("### Resultados del Catálogo")
@@ -211,14 +213,11 @@ else:
                 siete = item.get("data", ["", "", "", "", "", "", ""])
                 modo_busqueda = item.get("modo", "vehiculo")
                 
-                marca_head = str(siete[0]).upper() if siete[0] else "SIN MARCA"
-                modelo_sub = str(siete[1]) if siete[1] else "N/A"
-                anio_sub = str(siete[2]) if siete[2] else "N/A"
-                cant_del = limpiar_entero(siete[3])
-                cod_delantero = str(siete[4]) if siete[4] and str(siete[4]).lower() != 'nan' else 'No asignada'
-                cant_tra = limpiar_entero(siete[5])
-                cod_trasero = str(siete[6]) if siete[6] and str(siete[6]).lower() != 'nan' else 'No asignada'
+                # Desempaquetado directo sin corchetes numéricos
+                col_marca, col_modelo, col_anio, col_cant_del, col_cod_del, col_cant_tra, col_cod_tra = siete
                 
-                str_m.write("---")
-                str_m.markdown(f"#### 🚘 {marca_head} | {modelo_sub} ({anio_sub})")
-                
+                marca_head = str(col_marca).upper() if col_marca else "SIN MARCA"
+                modelo_sub = str(col_modelo) if col_modelo else "N/A"
+                anio_sub = str(col_anio) if col_anio else "N/A"
+                cant_del = limpiar_entero(col_cant_del)
+                cod_delantero = str(col_cod_del) if col_cod_del and str(col_cod_del).lower() != 'nan' else 'No asignada'
