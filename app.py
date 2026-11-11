@@ -97,6 +97,7 @@ if not str_m.session_state["autenticado"]:
             if input_usuario in USUARIOS_REGISTRADOS and USUARIOS_REGISTRADOS[input_usuario] == input_clave:
                 str_m.session_state["autenticado"] = True
                 str_m.session_state["usuario_actual"] = input_usuario
+                str_m.session_state["resultados_busqueda"] = None
                 str_m.rerun()
             else:
                 str_m.error("❌ Usuario o contraseña incorrectos.")
@@ -202,7 +203,7 @@ else:
                             str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
     # -------------------------------------------------------
-    # VISOR COMPLETO EN TEXTO LIMPIO (SIN SÍMBOLOS QUE BLOQUEEN)
+    # VISOR ULTRA-LIGERO CON BOTONES DIRECTOS (-1 / +1)
     # -------------------------------------------------------
     str_m.write("---")
     str_m.write("### Resultados del Catálogo")
@@ -223,4 +224,3 @@ else:
                 modelo_sub = col_modelo if col_modelo else "N/A"
                 anio_sub = col_anio if col_anio else "N/A"
                 cant_del = limpiar_entero(col_cant_del)
-                cod_delantero = col_cod_del if col_cod_del != "" else "No asignada"
