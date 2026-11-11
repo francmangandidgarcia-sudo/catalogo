@@ -3,16 +3,12 @@ import re
 import pandas as pd
 import streamlit as str_m
 
-# Configuración de apariencia estilo App Móvil
 str_m.set_page_config(
     page_title="Catálogo Privado",
     page_icon="🔒",
     layout="centered"
 )
 
-# =======================================================
-# CONFIGURACIÓN DE USUARIOS, CONTRASEÑAS Y ROLES
-# =======================================================
 USUARIOS_REGISTRADOS = {
     "admin": "admin",
     "leticia": "aceitera2026",
@@ -24,9 +20,6 @@ USUARIOS_REGISTRADOS = {
 USUARIOS_PERMITIDOS_SUMAR = ["admin", "leticia", "abraham"]
 ARCHIVO_EXCEL = "datos.xlsx"
 
-# =======================================================
-# INICIALIZACIÓN DEL ESTADO DE LA SESIÓN
-# =======================================================
 if "autenticado" not in str_m.session_state:
     str_m.session_state["autenticado"] = False
 if "usuario_actual" not in str_m.session_state:
@@ -34,9 +27,6 @@ if "usuario_actual" not in str_m.session_state:
 if "resultados_busqueda" not in str_m.session_state:
     str_m.session_state["resultados_busqueda"] = None
 
-# =======================================================
-# FUNCIONES DE CONTROL DE EXCEL
-# =======================================================
 def cargar_catalogo_real():
     if not os.path.exists(ARCHIVO_EXCEL):
         return None
@@ -52,14 +42,16 @@ def cargar_catalogo_real():
 def actualizar_stock_en_excel(fila_index, columna_index, nueva_cantidad):
     try:
         df = pd.read_excel(ARCHIVO_EXCEL, header=None)
+        while df.shape[1] <= columna_index:
+            df[df.shape[1]] = ""
         df.iloc[fila_index, columna_index] = int(nueva_cantidad)
         df.to_excel(ARCHIVO_EXCEL, index=False, header=False)
         return True
     except PermissionError:
-        str_m.error("❌ Archivo 'datos.xlsx' abierto en otra PC. Ciérralo y reintenta.")
+        str_m.error("❌ Archivo 'datos.xlsx' bloqueado. Ciérralo y reintenta.")
         return False
     except Exception as e:
-        str_m.error(f"Error inesperado al guardar en Excel: {e}")
+        str_m.error(f"Error inesperado al guardar: {e}")
         return False
 
 def validar_anio(texto_celda, anio_buscado):
@@ -74,8 +66,21 @@ def validar_anio(texto_celda, anio_buscado):
             return True
     return False
 
+def limpiar_entero(valor):
+    if not valor or str(valor).lower() == "nan" or str(valor).strip() == "":
+        return 0
+    try:
+        return int(float(str(valor).strip()))
+    except ValueError:
+        return 0
+
+def extraer_7_columnas(lista_cruda):
+    base = list(lista_cruda) + ["", "", "", "", "", "", ""]
+    c_marca, c_modelo, c_anio, c_stock_d, c_cod_d, c_stock_t, c_cod_t = base[:7]
+    return c_marca, c_modelo, c_anio, c_stock_d, c_cod_d, c_stock_t, c_cod_t
+
 # -------------------------------------------------------
-# PANTALLA 1: FORMULARIO DE INICIO DE SESIÓN
+# PANTALLA 1: INICIO DE SESIÓN
 # -------------------------------------------------------
 if not str_m.session_state["autenticado"]:
     str_m.title("🔒 Acceso al Catálogo")
@@ -92,10 +97,10 @@ if not str_m.session_state["autenticado"]:
                 str_m.session_state["usuario_actual"] = input_usuario
                 str_m.rerun()
             else:
-                str_m.error("❌ Usuario o contraseña incorrectos. Intente de nuevo.")
+                str_m.error("❌ Usuario o contraseña incorrectos.")
 
 # -------------------------------------------------------
-# PANTALLA 2: EL BUSCADOR Y GESTOR DE STOCK DOBLE
+# PANTALLA 2: EL BUSCADOR Y VISOR DIRECTO
 # -------------------------------------------------------
 else:
     usuario_activo = str_m.session_state["usuario_actual"]
@@ -113,47 +118,89 @@ else:
         str_m.title("🚘 Catálogo")
         str_m.caption("Buscador Local Automotriz")
 
-    with str_m.form("buscador_form"):
-        txt_marca = str_m.text_input("1. Marca (ej: Acura, Audi...)").strip().lower()
-        txt_modelo = str_m.text_input("2. Modelo / Motor (ej: Integra...)").strip().lower()
-        txt_anio = str_m.text_input("3. Año exacto (ej: 1990, 1998...)").strip()
-        btn_buscar = str_m.form_submit_button("🔍 Buscar Repuesto", use_container_width=True)
-        
-        if btn_buscar:
-            if not txt_marca and not txt_modelo and not txt_anio:
-                str_m.warning("⚠️ Escribe al menos un dato para filtrar.")
-                str_m.session_state["resultados_busqueda"] = None
-            else:
-                df_catalogo = cargar_catalogo_real()
-                
-                if df_catalogo is None:
+    # Pestañas dinámicas
+    if usuario_activo == "admin":
+        tab_vehiculo, tab_codigo = str_m.tabs(["🚗 Buscar por Vehículo", "🔢 Buscar por Código (Solo Admin)"])
+    else:
+        tab_lista = str_m.tabs(["🚗 Buscar por Vehículo"])
+        tab_vehiculo = tab_lista[0]
+        tab_codigo = None
+
+    # --- PESTAÑA A: VEHÍCULO ---
+    with tab_vehiculo:
+        with str_m.form("buscador_vehiculo_form"):
+            txt_marca = str_m.text_input("1. Marca (ej: Toyota, Kia...)").strip().lower()
+            txt_modelo = str_m.text_input("2. Modelo / Motor (ej: Corolla, Soul...)").strip().lower()
+            txt_anio = str_m.text_input("3. Año exacto (ej: 2015...)").strip()
+            btn_buscar_v = str_m.form_submit_button("🔍 Buscar por Vehículo", use_container_width=True)
+            
+            if btn_buscar_v:
+                if not txt_marca and not txt_modelo and not txt_anio:
+                    str_m.warning("⚠️ Escribe al menos un dato para filtrar.")
                     str_m.session_state["resultados_busqueda"] = None
                 else:
-                    filas_coincidentes = []
-                    for idx, fila in df_catalogo.iterrows():
-                        lista_celdas = fila.values.tolist()
-                        if len(lista_celdas) < 3:
-                            continue
-                        
-                        val_marca = str(lista_celdas[0]).strip().lower()
-                        val_modelo = str(lista_celdas[1]).strip().lower()
-                        val_anio_celda = str(lista_celdas[2]).strip()
-                        
-                        if "hoja de" in val_marca or "catálogo" in val_marca or "marca" in val_marca:
-                            continue
+                    df_catalogo = cargar_catalogo_real()
+                    if df_catalogo is not None:
+                        filas_coincidentes = []
+                        for idx, fila in df_catalogo.iterrows():
+                            lista_celdas = fila.values.tolist()
+                            if len(lista_celdas) < 3:
+                                continue
                             
-                        cumple_marca = not txt_marca or (txt_marca in val_marca)
-                        cumple_modelo = not txt_modelo or (txt_modelo in val_modelo)
-                        cumple_anio = not txt_anio or validar_anio(val_anio_celda, txt_anio)
-                        
-                        if cumple_marca and cumple_modelo and cumple_anio:
-                            filas_coincidentes.append({"index": idx, "data": lista_celdas})
-                    
-                    str_m.session_state["resultados_busqueda"] = filas_coincidentes
+                            m_raw, mod_raw, a_raw, _, _, _, _ = extraer_7_columnas(lista_celdas)
+                            val_marca = str(m_raw).strip().lower()
+                            val_modelo = str(mod_raw).strip().lower()
+                            val_anio_celda = str(a_raw).strip()
+                            
+                            if "hoja de" in val_marca or "catálogo" in val_marca or val_marca == "marca" or val_marca == "":
+                                continue
+                                
+                            cumple_marca = not txt_marca or (txt_marca in val_marca)
+                            cumple_modelo = not txt_modelo or (txt_modelo in val_modelo)
+                            cumple_anio = not txt_anio or validar_anio(val_anio_celda, txt_anio)
+                            
+                            if cumple_marca and cumple_modelo and cumple_anio:
+                                filas_coincidentes.append({"index": int(idx), "data": lista_celdas})
+                        str_m.session_state["resultados_busqueda"] = filas_coincidentes
+
+    # --- PESTAÑA B: CÓDIGO (SOLO ADMIN) ---
+    if tab_codigo is not None:
+        with tab_codigo:
+            with str_m.form("buscador_codigo_form"):
+                txt_codigo = str_m.text_input("Ingrese el código del repuesto (ej: WVA-24332...)").strip().lower()
+                btn_buscar_c = str_m.form_submit_button("🔍 Buscar por Código", use_container_width=True)
+                
+                if btn_buscar_c:
+                    if not txt_codigo:
+                        str_m.warning("⚠️ Escribe un código para buscar.")
+                        str_m.session_state["resultados_busqueda"] = None
+                    else:
+                        df_catalogo = cargar_catalogo_real()
+                        if df_catalogo is not None:
+                            filas_coincidentes = []
+                            for idx, fila in df_catalogo.iterrows():
+                                lista_celdas = fila.values.tolist()
+                                if len(lista_celdas) < 3:
+                                    continue
+                                
+                                m_raw, _, _, _, cod_d_raw, _, cod_t_raw = extraer_7_columnas(lista_celdas)
+                                val_marca = str(m_raw).strip().lower()
+                                
+                                if "hoja de" in val_marca or "catálogo" in val_marca or val_marca == "marca" or val_marca == "":
+                                    continue
+
+                                cod_del = str(cod_d_raw).strip().lower()
+                                cod_tra = str(cod_t_raw).strip().lower()
+                                
+                                if (txt_codigo in cod_del) or (txt_codigo in cod_tra):
+                                    filas_coincidentes.append({"index": int(idx), "data": lista_celdas})
+                            str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
     # -------------------------------------------------------
-    # DESPLIEGUE DE RESULTADOS (DISEÑO SECUENCIAL ANTI-INDENTACIÓN)
+    # VISOR DE RESULTADOS PLANO (SIN CONTENEDORES QUE FALLEN)
     # -------------------------------------------------------
+    str_m.write("---")
+    str_m.write("### Resultados del Catálogo")
     resultados = str_m.session_state["resultados_busqueda"]
     
     if resultados is not None:
@@ -161,54 +208,18 @@ else:
             str_m.success(f"📦 {len(resultados)} registro(s) encontrado(s)")
             
             for item in resultados:
-                fila_idx = item["index"]
-                celdas = item["data"]
+                fila_idx = item.get("index")
+                lista_datos = item.get("data")
                 
-                marca_head = str(celdas[0]).strip().upper() if len(celdas) > 0 else "MARCA"
-                modelo_sub = str(celdas[1]).strip() if len(celdas) > 1 else "N/A"
-                anio_sub = str(celdas[2]).strip() if len(celdas) > 2 else "N/A"
+                m_str, mod_str, a_str, sd_str, cd_str, st_str, ct_str = extraer_7_columnas(lista_datos)
                 
-                stock_del = str(celdas[3]).strip() if len(celdas) > 3 else "0"
-                cod_delantero = str(celdas[4]).strip() if len(celdas) > 4 else ""
-                stock_tra = str(celdas[5]).strip() if len(celdas) > 5 else "0"
-                cod_trasero = str(celdas[6]).strip() if len(celdas) > 6 else ""
+                marca_head = str(m_str).strip().upper()
+                modelo_sub = str(mod_str).strip()
+                anio_sub = str(a_str).strip()
                 
-                try:
-                    cant_del = int(stock_del) if stock_del and stock_del.lower() != "nan" else 0
-                    cant_tra = int(stock_tra) if stock_tra and stock_tra.lower() != "nan" else 0
-                except ValueError:
-                    cant_del, cant_tra = 0, 0
+                cant_del = limpiar_entero(sd_str)
+                cod_delantero = str(cd_str).strip()
+                cant_tra = limpiar_entero(st_str)
+                cod_trasero = str(ct_str).strip()
                 
-                with str_m.container(border=True):
-                    str_m.markdown(f"### 🚘 {marca_head}")
-                    str_m.markdown(f"**Modelo/Motor:** {modelo_sub} | **Años:** {anio_sub}")
-                    
-                    unidades_cambio = str_m.number_input("Cantidad de piezas a modificar:", min_value=1, value=1, step=1, key=f"cant_{fila_idx}")
-                    
-                    str_m.markdown("---")
-                    
-                    # --- BLOQUE SEGURO DELANTERA ---
-                    txt_c_del = cod_delantero if cod_delantero and cod_delantero.lower() != 'nan' else 'No asignada'
-                    str_m.info(f"🚘 **Pastilla Delantera:** {txt_c_del} | Existencia: **{cant_del} u.**")
-                    
-                    if cant_del == 0:
-                        str_m.warning("⚠️ Sin stock delantero disponible.")
-                        
-                    btn_del_restar = str_m.button("➖ Restar Delantera", key=f"del_res_{fila_idx}", use_container_width=True)
-                    if btn_del_restar and cant_del >= unidades_cambio:
-                        actualizar_stock_en_excel(fila_idx, 3, cant_del - unidades_cambio)
-                        str_m.session_state["resultados_busqueda"] = None
-                        str_m.rerun()
-                    elif btn_del_restar:
-                        str_m.error("Error: No puedes restar más unidades de las disponibles en el stock delantero.")
-                        
-                    if usuario_activo in USUARIOS_PERMITIDOS_SUMAR:
-                        btn_del_sumar = str_m.button("➕ Agregar Delantera", key=f"del_sum_{fila_idx}", use_container_width=True)
-                        if btn_del_sumar:
-                            actualizar_stock_en_excel(fila_idx, 3, cant_del + unidades_cambio)
-                            str_m.session_state["resultados_busqueda"] = None
-                            str_m.rerun()
-                            
-                    str_m.markdown("---")
-                    
-                    # --- BLOQUE SEGURO TRASERA ---
+                # Dibujamos directo en pantalla sin 'with container'
