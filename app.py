@@ -120,10 +120,7 @@ else:
             
     with col_titulo:
         str_m.title("🚘 Catálogo")
-        if es_privilegiado:
-            str_m.caption("Modo Administrador (Ingresos y Ventas)")
-        else:
-            str_m.caption("Modo Ventas (Consulta y Descuento)")
+        str_m.caption("Catálogo Calibrado v2")
 
     if es_privilegiado:
         tab_vehiculo, tab_codigo = str_m.tabs(["🚗 Buscar por Vehículo", "🔢 Ingreso por Código"])
@@ -203,16 +200,14 @@ else:
                             str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
     # -------------------------------------------------------
-    # VISOR DE RESULTADOS
+    # VISOR DE RESULTADOS SIN COLUMNAS ANIDADAS (100% LINEAL)
     # -------------------------------------------------------
     str_m.write("---")
-    c_res_tit, c_res_limpiar = str_m.columns([0.7, 0.3])
-    with c_res_tit:
-        str_m.write("### Resultados del Catálogo")
-    with c_res_limpiar:
-        if str_m.button("🧹 Limpiar Pantalla", use_container_width=True):
-            str_m.session_state["resultados_busqueda"] = None
-            str_m.rerun()
+    str_m.write("### Resultados del Catálogo")
+    
+    if str_m.button("🧹 Limpiar Pantalla", use_container_width=True):
+        str_m.session_state["resultados_busqueda"] = None
+        str_m.rerun()
 
     resultados = str_m.session_state["resultados_busqueda"]
     
@@ -227,3 +222,7 @@ else:
                 
                 col_marca, col_modelo, col_anio, col_cant_del, col_cod_del, col_cant_tra, col_cod_tra = extraer_7_datos(lista_cruda)
                 
+                marca_head = col_marca.upper() if col_marca else "SIN MARCA"
+                modelo_sub = col_modelo if col_modelo else "N/A"
+                anio_sub = col_anio if col_anio else "N/A"
+                cant_del = limpiar_entero(col_cant_del)
