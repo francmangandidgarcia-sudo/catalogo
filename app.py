@@ -3,15 +3,8 @@ import re
 import pandas as pd
 import streamlit as st
 
-st.set_page_config(
-    page_title="Catálogo Privado",
-    page_icon="🔒",
-    layout="centered"
-)
+st.set_page_config(page_title="Catálogo Privado", page_icon="🔒", layout="centered")
 
-# =======================================================
-# CONFIGURACIÓN DE USUARIOS, CONTRASEÑAS Y NOMBRES REALES
-# =======================================================
 USUARIOS_REGISTRADOS = {
     "admin": "admin",
     "leticia": "Aceitera2026",
@@ -38,9 +31,6 @@ if "usuario_actual" not in st.session_state:
 if "resultados_busqueda" not in st.session_state:
     st.session_state["resultados_busqueda"] = None
 
-# =======================================================
-# FUNCIONES DE LECTURA Y BÚSQUEDA (5 COLUMNAS EXACTAS)
-# =======================================================
 def limpiar_texto(valor):
     texto = str(valor).replace("\n", " ").replace("\r", " ").strip()
     return "" if texto.lower() in ["nan", "none", "nat"] else texto
@@ -61,7 +51,6 @@ def extraer_5_columnas(lista_cruda):
             cinco.append(limpiar_texto(item))
     while len(cinco) < 5:
         cinco.append("")
-    # A=Marca, B=Modelo, C=Año, D=Delanteras, E=Traseras
     c_marca, c_modelo, c_anio, c_del, c_tra = cinco
     return c_marca, c_modelo, c_anio, c_del, c_tra
 
@@ -116,7 +105,6 @@ def buscar_por_codigo(txt_codigo):
 if not st.session_state["autenticado"]:
     st.title("🔒 Acceso al Catálogo")
     st.write("Por favor, ingrese sus credenciales de seguridad.")
-    
     with st.form("login_form"):
         input_usuario = st.text_input("Usuario").strip().lower()
         input_clave = st.text_input("Contraseña", type="password").strip()
@@ -127,7 +115,7 @@ if not st.session_state["autenticado"]:
                 st.session_state["resultados_busqueda"] = None
                 st.rerun()
             else:
-                st.error("❌ Usuario o contraseña incorrectos. Intente de nuevo.")
+                st.error("❌ Usuario o contraseña incorrectos.")
 
 # -------------------------------------------------------
 # PANTALLA 2: EL BUSCADOR AUTOMOTRIZ
@@ -144,81 +132,58 @@ else:
             st.session_state["usuario_actual"] = ""
             st.session_state["resultados_busqueda"] = None
             st.rerun()
-            
     with col_titulo:
         st.title("🚘 Catálogo")
         st.caption("Buscador Automotriz")
 
-    # --- VISTA CON 2 PESTAÑAS PARA ADMIN Y LETICIA ---
     if usuario_activo in USUARIOS_BUSQUEDA_CODIGO:
         tab_vehiculo, tab_codigo = st.tabs(["🚗 Buscar por Vehículo", "🔢 Buscar por Código"])
-        
         with tab_vehiculo:
             with st.form("buscador_vehiculo_privilegiado"):
                 txt_marca = st.text_input("1. Marca * (ej: Toyota, Kia, Honda...)").strip().lower()
                 txt_modelo = st.text_input("2. Modelo / Motor * (ej: Corolla, Hilux...)").strip().lower()
                 txt_anio = st.text_input("3. Año exacto * (ej: 2015, 2004...)").strip()
-                
                 if st.form_submit_button("🔍 Buscar", use_container_width=True):
                     if not txt_marca or not txt_modelo or not txt_anio:
-                        st.warning("⚠️ Es obligatorio llenar las 3 casillas (Marca, Modelo y Año).")
+                        st.warning("⚠️ Es obligatorio llenar las 3 casillas.")
                         st.session_state["resultados_busqueda"] = None
                     elif not txt_anio.isdigit() or len(txt_anio) != 4:
-                        st.warning("⚠️ Por favor, escribe un año válido de 4 dígitos (ej: 2015).")
+                        st.warning("⚠️ Escribe un año válido de 4 dígitos.")
                         st.session_state["resultados_busqueda"] = None
                     else:
-                        res = buscar_por_vehiculo(txt_marca, txt_modelo, txt_anio)
-                        if res is None:
-                            st.error("❌ Archivo 'datos.xlsx' no encontrado.")
-                        st.session_state["resultados_busqueda"] = res
-
+                        st.session_state["resultados_busqueda"] = buscar_por_vehiculo(txt_marca, txt_modelo, txt_anio)
         with tab_codigo:
             with st.form("buscador_codigo_privilegiado"):
                 txt_codigo = st.text_input("Código de pastilla (ej: 717, D1210, 24332...)").strip().lower()
-                
                 if st.form_submit_button("🔍 Buscar", use_container_width=True):
                     if not txt_codigo:
-                        st.warning("⚠️ Escribe un código para realizar la búsqueda.")
+                        st.warning("⚠️ Escribe un código.")
                         st.session_state["resultados_busqueda"] = None
                     else:
-                        res = buscar_por_codigo(txt_codigo)
-                        if res is None:
-                            st.error("❌ Archivo 'datos.xlsx' no encontrado.")
-                        st.session_state["resultados_busqueda"] = res
-
-    # --- VISTA ESTÁNDAR PARA EL RESTO DE USUARIOS ---
+                        st.session_state["resultados_busqueda"] = buscar_por_codigo(txt_codigo)
     else:
         with st.form("buscador_form_general"):
             txt_marca = st.text_input("1. Marca * (ej: Toyota, Kia, Honda...)").strip().lower()
             txt_modelo = st.text_input("2. Modelo / Motor * (ej: Corolla, Hilux...)").strip().lower()
             txt_anio = st.text_input("3. Año exacto * (ej: 2015, 2004...)").strip()
-            
             if st.form_submit_button("🔍 Buscar", use_container_width=True):
                 if not txt_marca or not txt_modelo or not txt_anio:
-                    st.warning("⚠️ Es obligatorio llenar las 3 casillas (Marca, Modelo y Año) para realizar una búsqueda exacta.")
+                    st.warning("⚠️ Es obligatorio llenar las 3 casillas.")
                     st.session_state["resultados_busqueda"] = None
                 elif not txt_anio.isdigit() or len(txt_anio) != 4:
-                    st.warning("⚠️ Por favor, escribe un año válido de 4 dígitos (ej: 2015).")
+                    st.warning("⚠️ Escribe un año válido de 4 dígitos.")
                     st.session_state["resultados_busqueda"] = None
                 else:
-                    res = buscar_por_vehiculo(txt_marca, txt_modelo, txt_anio)
-                    if res is None:
-                        st.error("❌ Archivo 'datos.xlsx' no encontrado.")
-                    st.session_state["resultados_busqueda"] = res
+                    st.session_state["resultados_busqueda"] = buscar_por_vehiculo(txt_marca, txt_modelo, txt_anio)
 
     # -------------------------------------------------------
-    # DESPLIEGUE DE RESULTADOS
+    # DESPLIEGUE COMPACTO DE RESULTADOS (1 BLOQUE POR VEHÍCULO)
     # -------------------------------------------------------
     resultados = st.session_state["resultados_busqueda"]
-    
     if resultados is not None:
         if len(resultados) > 0:
             st.success(f"📦 {len(resultados)} registro(s) encontrado(s)")
             for marca, modelo, anio, cod_del, cod_tra in resultados:
-                mod_final = modelo if modelo else "N/A"
-                anio_final = anio if anio else "N/A"
-                txt_del = f"🔹 **Delantera:** {cod_del}" if cod_del else "🔹 **Delantera:** No asignada"
-                txt_tra = f"🛑 **Trasera:** {cod_tra}" if cod_tra else "🛑 **Trasera:** No asignada"
-                
-                st.write("---")
-                st.subheader(f"🚘 {marca}")
+                st.info(f"🚘 **{marca} — {modelo or 'N/A'} ({anio or 'N/A'})**\n\n🔹 **Delantera:** {cod_del or 'No asignada'}\n\n🛑 **Trasera:** {cod_tra or 'No asignada'}")
+        else:
+            st.error("❌ No se encontraron repuestos con los criterios ingresados.")
