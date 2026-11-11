@@ -52,8 +52,8 @@ def cargar_catalogo_real():
 def actualizar_stock_en_excel(fila_index, columna_index, nueva_cantidad):
     try:
         df = pd.read_excel(ARCHIVO_EXCEL, header=None)
-        while df.shape[1] <= columna_index:
-            df[df.shape[1]] = ""
+        while df.shape <= columna_index:
+            df[df.shape] = ""
         df.iloc[fila_index, columna_index] = int(nueva_cantidad)
         df.to_excel(ARCHIVO_EXCEL, index=False, header=False)
         return True
@@ -83,6 +83,12 @@ def limpiar_entero(valor):
         return int(float(str(valor).strip()))
     except ValueError:
         return 0
+
+def extraer_7_columnas(lista_cruda):
+    # Asegura 7 elementos y los separa sin usar corchetes numéricos
+    base = list(lista_cruda) + ["", "", "", "", "", "", ""]
+    c_marca, c_modelo, c_anio, c_stock_d, c_cod_d, c_stock_t, c_cod_t = base[:7]
+    return c_marca, c_modelo, c_anio, c_stock_d, c_cod_d, c_stock_t, c_cod_t
 
 # -------------------------------------------------------
 # PANTALLA 1: FORMULARIO DE INICIO DE SESIÓN
@@ -128,7 +134,7 @@ else:
         tab_vehiculo, tab_codigo = str_m.tabs(["🚗 Buscar por Vehículo", "🔢 Buscar por Código (Solo Admin)"])
     else:
         tab_lista = str_m.tabs(["🚗 Buscar por Vehículo"])
-        tab_vehiculo = tab_lista[0]
+        tab_vehiculo = tab_lista
         tab_codigo = None
 
     # --- PESTAÑA A: BUSCADOR POR VEHÍCULO ---
@@ -152,10 +158,10 @@ else:
                             if len(lista_celdas) < 3:
                                 continue
                             
-                            # Índices exactos de columna: 0=Marca, 1=Modelo, 2=Año
-                            val_marca = str(lista_celdas[0]).strip().lower()
-                            val_modelo = str(lista_celdas[1]).strip().lower()
-                            val_anio_celda = str(lista_celdas[2]).strip()
+                            m_raw, mod_raw, a_raw, _, _, _, _ = extraer_7_columnas(lista_celdas)
+                            val_marca = str(m_raw).strip().lower()
+                            val_modelo = str(mod_raw).strip().lower()
+                            val_anio_celda = str(a_raw).strip()
                             
                             if "hoja de" in val_marca or "catálogo" in val_marca or val_marca == "marca" or val_marca == "":
                                 continue
@@ -188,20 +194,21 @@ else:
                                 if len(lista_celdas) < 3:
                                     continue
                                 
-                                val_marca = str(lista_celdas[0]).strip().lower()
+                                m_raw, _, _, _, cod_d_raw, _, cod_t_raw = extraer_7_columnas(lista_celdas)
+                                val_marca = str(m_raw).strip().lower()
+                                
                                 if "hoja de" in val_marca or "catálogo" in val_marca or val_marca == "marca" or val_marca == "":
                                     continue
 
-                                # Índices de código: 4=Cód Delantero, 6=Cód Trasero
-                                cod_del = str(lista_celdas[4]).strip().lower() if len(lista_celdas) > 4 else ""
-                                cod_tra = str(lista_celdas[6]).strip().lower() if len(lista_celdas) > 6 else ""
+                                cod_del = str(cod_d_raw).strip().lower()
+                                cod_tra = str(cod_t_raw).strip().lower()
                                 
                                 if (txt_codigo in cod_del) or (txt_codigo in cod_tra):
                                     filas_coincidentes.append({"index": int(idx), "data": lista_celdas})
                             str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
     # -------------------------------------------------------
-    # VISOR DE RESULTADOS CON ÍNDICES RESTAURADOS
+    # VISOR DE RESULTADOS SIN CORCHETES NUMÉRICOS
     # -------------------------------------------------------
     str_m.write("---")
     str_m.write("### Resultados del Catálogo")
@@ -212,9 +219,4 @@ else:
             str_m.success(f"📦 {len(resultados)} registro(s) encontrado(s)")
             
             for item in resultados:
-                fila_idx = item["index"]
-                lista_datos = item["data"]
-                
-                # Aseguramos que la lista tenga 7 elementos
-                celdas_completas = lista_datos + [""] * (7 - len(lista_datos)) if len(lista_datos) < 7 else lista_datos
-                
+                fila_idx = item.get("index")
