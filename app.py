@@ -45,8 +45,8 @@ def limpiar_texto(valor):
     texto = str(valor).replace("\n", " ").replace("\r", " ").strip()
     return "" if texto.lower() in ["nan", "none", "nat"] else texto
 
-@st.cache_data(ttl=10)
-def cargar_catalogo_rapido():
+@st.cache_data(ttl=15)
+def cargar_catalogo():
     if not os.path.exists(ARCHIVO_EXCEL):
         return None
     df = pd.read_excel(ARCHIVO_EXCEL, header=None).fillna("").astype(str)
@@ -54,15 +54,16 @@ def cargar_catalogo_rapido():
         df[col] = df[col].str.replace(r"\.0$", "", regex=True).str.strip()
     return df
 
-def extraer_5_datos(lista_cruda):
+def extraer_5_columnas(lista_cruda):
     cinco = []
     for item in lista_cruda:
         if len(cinco) < 5:
             cinco.append(limpiar_texto(item))
     while len(cinco) < 5:
         cinco.append("")
-    c_marca, c_modelo, c_anio, c_cod_d, c_cod_t = cinco
-    return c_marca, c_modelo, c_anio, c_cod_d, c_cod_t
+    # A=Marca, B=Modelo, C=Año, D=Delanteras, E=Traseras
+    c_marca, c_modelo, c_anio, c_del, c_tra = cinco
+    return c_marca, c_modelo, c_anio, c_del, c_tra
 
 def validar_anio(texto_celda, anio_buscado):
     if not anio_buscado:
@@ -76,7 +77,7 @@ def validar_anio(texto_celda, anio_buscado):
     return False
 
 def buscar_por_vehiculo(txt_marca, txt_modelo, txt_anio):
-    df_catalogo = cargar_catalogo_rapido()
+    df_catalogo = cargar_catalogo()
     if df_catalogo is None:
         return None
     coincidencias = []
@@ -84,7 +85,7 @@ def buscar_por_vehiculo(txt_marca, txt_modelo, txt_anio):
         lista = fila.values.tolist()
         if len(lista) < 3:
             continue
-        marca, modelo, anio, cod_del, cod_tra = extraer_5_datos(lista)
+        marca, modelo, anio, cod_del, cod_tra = extraer_5_columnas(lista)
         val_marca = marca.lower()
         if not val_marca or "hoja de" in val_marca or "catálogo" in val_marca or val_marca == "marca":
             continue
@@ -93,7 +94,7 @@ def buscar_por_vehiculo(txt_marca, txt_modelo, txt_anio):
     return coincidencias
 
 def buscar_por_codigo(txt_codigo):
-    df_catalogo = cargar_catalogo_rapido()
+    df_catalogo = cargar_catalogo()
     if df_catalogo is None:
         return None
     coincidencias = []
@@ -101,7 +102,7 @@ def buscar_por_codigo(txt_codigo):
         lista = fila.values.tolist()
         if len(lista) < 3:
             continue
-        marca, modelo, anio, cod_del, cod_tra = extraer_5_datos(lista)
+        marca, modelo, anio, cod_del, cod_tra = extraer_5_columnas(lista)
         val_marca = marca.lower()
         if not val_marca or "hoja de" in val_marca or "catálogo" in val_marca or val_marca == "marca":
             continue
@@ -221,4 +222,3 @@ else:
                 
                 st.write("---")
                 st.subheader(f"🚘 {marca}")
-                st.write(f"**Modelo/Motor:** {mod_final} | **Años:** {anio_final}")
