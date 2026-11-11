@@ -14,24 +14,21 @@ st.set_page_config(
 # =======================================================
 USUARIOS_REGISTRADOS = {
     "admin": "admin",
-    "leticia": "aceitera2026",
-    "abraham": "jefe2026",
-    "dailyn": "Lubricante2026",
-    "jackelin": "Repuesto2026"
+    "leticia": "Aceitera2026",
+    "abraham": "Jefe2026",
+    "dailyn": "Lubricantes2026",
+    "jackelin": "Repuestos2026"
 }
 
-# Aquí puedes editar los nombres completos que aparecerán al iniciar sesión
 NOMBRES_COMPLETOS = {
     "admin": "Administrador General",
     "leticia": "Maria Leticia Osorio",
-    "abraham": "Abraham (Completar Apellido)",
-    "dailyn": "Dailyn (Completar Apellido)",
-    "jackelin": "Jackelin (Completar Apellido)"
+    "abraham": "Luis Abraham Mellado Osorio",
+    "dailyn": "Dailyn Siomara Del Cid",
+    "jackelin": "Jackelin"
 }
 
-# Usuarios con acceso a la pestaña de búsqueda por código
 USUARIOS_BUSQUEDA_CODIGO = ["admin", "leticia"]
-
 ARCHIVO_EXCEL = "datos.xlsx"
 
 if "autenticado" not in st.session_state:
@@ -42,7 +39,7 @@ if "resultados_busqueda" not in st.session_state:
     st.session_state["resultados_busqueda"] = None
 
 # =======================================================
-# FUNCIONES DE LECTURA Y BÚSQUEDA
+# FUNCIONES DE LECTURA Y BÚSQUEDA INTELIGENTE
 # =======================================================
 def limpiar_texto(valor):
     texto = str(valor).replace("\n", " ").replace("\r", " ").strip()
@@ -57,13 +54,25 @@ def cargar_catalogo_rapido():
         df[col] = df[col].str.replace(r"\.0$", "", regex=True).str.strip()
     return df
 
-def extraer_columnas_excel(lista_cruda):
-    siete = [limpiar_texto(x) for x in lista_cruda[:7]]
-    while len(siete) < 7:
-        siete.append("")
-    # A=Marca, B=Modelo, C=Año, D=Ignorada, E=Cod_Delantera, F=Ignorada, G=Cod_Trasera
-    c_marca, c_modelo, c_anio, _, c_cod_d, _, c_cod_t = siete
-    return c_marca, c_modelo, c_anio, c_cod_d, c_cod_t
+def analizar_fila(lista_cruda):
+    celdas = [limpiar_texto(x) for x in lista_cruda]
+    while len(celdas) < 5:
+        celdas.append("")
+    
+    marca = celdas[0]
+    modelo = celdas[1]
+    anio = celdas[2]
+    
+    # Si el Excel tiene 5 columnas exactas (A=Marca, B=Modelo, C=Año, D=Del, E=Tra)
+    if len(celdas) == 5:
+        cod_del = celdas[3]
+        cod_tra = celdas[4]
+    else:
+        # Si quedaron columnas vacías en medio (ej. 7 columnas), toma las posiciones 4 y 6 o las no vacías
+        cod_del = celdas[3] if celdas[3] else (celdas[4] if len(celdas) > 4 else "")
+        cod_tra = celdas[4] if (celdas[3] and celdas[4]) else (celdas[6] if len(celdas) > 6 else (celdas[5] if len(celdas) > 5 else ""))
+        
+    return marca, modelo, anio, cod_del, cod_tra
 
 def validar_anio(texto_celda, anio_buscado):
     if not anio_buscado:
@@ -85,7 +94,7 @@ def buscar_por_vehiculo(txt_marca, txt_modelo, txt_anio):
         lista = fila.values.tolist()
         if len(lista) < 3:
             continue
-        marca, modelo, anio, cod_del, cod_tra = extraer_columnas_excel(lista)
+        marca, modelo, anio, cod_del, cod_tra = analizar_fila(lista)
         val_marca = marca.lower()
         if not val_marca or "hoja de" in val_marca or "catálogo" in val_marca or val_marca == "marca":
             continue
@@ -102,11 +111,13 @@ def buscar_por_codigo(txt_codigo):
         lista = fila.values.tolist()
         if len(lista) < 3:
             continue
-        marca, modelo, anio, cod_del, cod_tra = extraer_columnas_excel(lista)
+        marca, modelo, anio, cod_del, cod_tra = analizar_fila(lista)
         val_marca = marca.lower()
         if not val_marca or "hoja de" in val_marca or "catálogo" in val_marca or val_marca == "marca":
             continue
-        if (txt_codigo in cod_del.lower()) or (txt_codigo in cod_tra.lower()):
+        # Busca el código en cualquier celda de la fila después del año
+        resto_fila = " ".join([limpiar_texto(c).lower() for c in lista[3:]])
+        if txt_codigo in resto_fila:
             coincidencias.append((marca.upper(), modelo, anio, cod_del, cod_tra))
     return coincidencias
 
@@ -159,7 +170,7 @@ else:
                 txt_modelo = st.text_input("2. Modelo / Motor * (ej: Corolla, Hilux...)").strip().lower()
                 txt_anio = st.text_input("3. Año exacto * (ej: 2015, 2004...)").strip()
                 
-                if st.form_submit_button("🔍 Buscar por Vehículo", use_container_width=True):
+                if st.form_submit_button("🔍 Buscar", use_container_width=True):
                     if not txt_marca or not txt_modelo or not txt_anio:
                         st.warning("⚠️ Es obligatorio llenar las 3 casillas (Marca, Modelo y Año).")
                         st.session_state["resultados_busqueda"] = None
@@ -176,7 +187,7 @@ else:
             with st.form("buscador_codigo_privilegiado"):
                 txt_codigo = st.text_input("Código de pastilla (ej: 717, D1210, 24332...)").strip().lower()
                 
-                if st.form_submit_button("🔍 Buscar por Código", use_container_width=True):
+                if st.form_submit_button("🔍 Buscar", use_container_width=True):
                     if not txt_codigo:
                         st.warning("⚠️ Escribe un código para realizar la búsqueda.")
                         st.session_state["resultados_busqueda"] = None
@@ -214,9 +225,3 @@ else:
     if resultados is not None:
         if len(resultados) > 0:
             st.success(f"📦 {len(resultados)} registro(s) encontrado(s)")
-            
-            for marca, modelo, anio, cod_del, cod_tra in resultados:
-                with st.container(border=True):
-                    st.markdown(f"### 🚘 {marca}")
-                    st.markdown(f"**Modelo/Motor:** {modelo if modelo else 'N/A'} | **Años:** {anio if anio else 'N/A'}")
-                    
