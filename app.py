@@ -78,10 +78,9 @@ def extraer_7_datos(lista_cruda):
             siete.append(limpiar_texto(item))
     while len(siete) < 7:
         siete.append("")
-    # Orden calibrado según tu Excel real:
-    # A=Marca, B=Modelo, C=Año, D=Cant_Del, E=Cod_Del, F=Cod_Tra, G=Cant_Tra
-    c_marca, c_modelo, c_anio, c_cant_d, c_cod_d, c_cod_t, c_cant_t = siete
-    return c_marca, c_modelo, c_anio, c_cant_d, c_cod_d, c_cod_t, c_cant_t
+    # Orden estándar: A=Marca, B=Modelo, C=Año, D=Cant_Del, E=Cod_Del, F=Cant_Tra, G=Cod_Tra
+    c_marca, c_modelo, c_anio, c_cant_d, c_cod_d, c_cant_t, c_cod_t = siete
+    return c_marca, c_modelo, c_anio, c_cant_d, c_cod_d, c_cant_t, c_cod_t
 
 # -------------------------------------------------------
 # PANTALLA 1: INICIO DE SESIÓN
@@ -191,7 +190,7 @@ else:
                                 if len(lista_celdas) < 3:
                                     continue
                                 
-                                c_marca, _, _, _, c_cod_d, c_cod_t, _ = extraer_7_datos(lista_celdas)
+                                c_marca, _, _, _, c_cod_d, _, c_cod_t = extraer_7_datos(lista_celdas)
                                 val_marca = c_marca.lower()
                                 
                                 if "hoja de" in val_marca or "catálogo" in val_marca or val_marca == "marca" or val_marca == "":
@@ -205,7 +204,7 @@ else:
                             str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
     # -------------------------------------------------------
-    # VISOR CALIBRADO AL ORDEN REAL DE TU EXCEL
+    # VISOR DE RESULTADOS SINCRONIZADO
     # -------------------------------------------------------
     str_m.write("---")
     str_m.write("### Resultados del Catálogo")
@@ -220,7 +219,7 @@ else:
                 lista_cruda = item.get("data", [])
                 modo_busqueda = item.get("modo", "vehiculo")
                 
-                col_marca, col_modelo, col_anio, col_cant_del, col_cod_del, col_cod_tra, col_cant_tra = extraer_7_datos(lista_cruda)
+                col_marca, col_modelo, col_anio, col_cant_del, col_cod_del, col_cant_tra, col_cod_tra = extraer_7_datos(lista_cruda)
                 
                 marca_head = col_marca.upper() if col_marca else "SIN MARCA"
                 modelo_sub = col_modelo if col_modelo else "N/A"
