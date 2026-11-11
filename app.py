@@ -17,7 +17,6 @@ USUARIOS_REGISTRADOS = {
     "jackelin": "Repuesto2026"
 }
 
-# Solo estos 2 usuarios tienen acceso a Ingreso por Código y botón Agregar
 USUARIOS_PRIVILEGIADOS = ["admin", "leticia"]
 ARCHIVO_EXCEL = "datos.xlsx"
 
@@ -27,6 +26,12 @@ if "usuario_actual" not in str_m.session_state:
     str_m.session_state["usuario_actual"] = ""
 if "resultados_busqueda" not in str_m.session_state:
     str_m.session_state["resultados_busqueda"] = None
+
+def limpiar_texto(valor):
+    texto = str(valor).replace("\n", " ").replace("\r", " ").strip()
+    if texto.lower() in ["nan", "none", "nat"]:
+        return ""
+    return texto
 
 def cargar_catalogo_real():
     if not os.path.exists(ARCHIVO_EXCEL):
@@ -49,7 +54,7 @@ def actualizar_stock_en_excel(fila_index, columna_index, nueva_cantidad):
 def validar_anio(texto_celda, anio_buscado):
     if not anio_buscado:
         return True
-    texto_celda = str(texto_celda).strip()
+    texto_celda = limpiar_texto(texto_celda)
     if anio_buscado in texto_celda:
         return True
     rangos = re.findall(r"(\d{4})\s*-\s*(\d{4})", texto_celda)
@@ -59,8 +64,8 @@ def validar_anio(texto_celda, anio_buscado):
     return False
 
 def limpiar_entero(valor):
-    texto = str(valor).strip().lower()
-    if texto == "" or texto == "nan" or texto == "none":
+    texto = limpiar_texto(valor)
+    if texto == "":
         return 0
     if texto.replace(".", "", 1).isdigit():
         return int(float(texto))
@@ -70,7 +75,7 @@ def extraer_7_datos(lista_cruda):
     siete = []
     for item in lista_cruda:
         if len(siete) < 7:
-            siete.append(str(item).strip())
+            siete.append(limpiar_texto(item))
     while len(siete) < 7:
         siete.append("")
     c_marca, c_modelo, c_anio, c_cant_d, c_cod_d, c_cant_t, c_cod_t = siete
@@ -197,7 +202,7 @@ else:
                             str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
     # -------------------------------------------------------
-    # VISOR COMPLETO CON CÓDIGOS, EXISTENCIAS Y BOTONES
+    # VISOR COMPLETO EN TEXTO LIMPIO (SIN SÍMBOLOS QUE BLOQUEEN)
     # -------------------------------------------------------
     str_m.write("---")
     str_m.write("### Resultados del Catálogo")
@@ -212,10 +217,10 @@ else:
                 lista_cruda = item.get("data", [])
                 modo_busqueda = item.get("modo", "vehiculo")
                 
-                # Extracción directa en 7 variables independientes (sin corchetes)
                 col_marca, col_modelo, col_anio, col_cant_del, col_cod_del, col_cant_tra, col_cod_tra = extraer_7_datos(lista_cruda)
                 
                 marca_head = col_marca.upper() if col_marca else "SIN MARCA"
                 modelo_sub = col_modelo if col_modelo else "N/A"
                 anio_sub = col_anio if col_anio else "N/A"
                 cant_del = limpiar_entero(col_cant_del)
+                cod_delantero = col_cod_del if col_cod_del != "" else "No asignada"
