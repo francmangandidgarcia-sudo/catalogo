@@ -10,14 +10,23 @@ st.set_page_config(
 )
 
 # =======================================================
-# CONFIGURACIÓN DE USUARIOS Y CONTRASEÑAS
+# CONFIGURACIÓN DE USUARIOS, CONTRASEÑAS Y NOMBRES REALES
 # =======================================================
 USUARIOS_REGISTRADOS = {
-    "admin": "Fgarci@1404",
+    "admin": "admin",
     "leticia": "Aceitera2026",
     "abraham": "Jefe2026",
-    "dailyn": "Lubricantes2026",
-    "jackelin": "Repuestos2026"
+    "dailyn": "Lubricante2026",
+    "jackelin": "Repuesto2026"
+}
+
+# Aquí puedes editar los nombres completos que aparecerán al iniciar sesión
+NOMBRES_COMPLETOS = {
+    "admin": "Administrador General",
+    "leticia": "Maria Leticia Osorio",
+    "abraham": "Luis Abraham Mellado Osorio",
+    "dailyn": "Dailyn Siomara Del Cid",
+    "jackelin": "Jackelin"
 }
 
 # Usuarios con acceso a la pestaña de búsqueda por código
@@ -125,10 +134,11 @@ if not st.session_state["autenticado"]:
 # -------------------------------------------------------
 else:
     usuario_activo = st.session_state["usuario_actual"]
+    nombre_mostrado = NOMBRES_COMPLETOS.get(usuario_activo, usuario_activo.capitalize())
     
     col_titulo, col_logout = st.columns([0.65, 0.35])
     with col_logout:
-        st.write(f"👤: **{usuario_activo.capitalize()}**")
+        st.write(f"👤 **{nombre_mostrado}**")
         if st.button("🚪 Salir", use_container_width=True):
             st.session_state["autenticado"] = False
             st.session_state["usuario_actual"] = ""
@@ -210,12 +220,3 @@ else:
                     st.markdown(f"### 🚘 {marca}")
                     st.markdown(f"**Modelo/Motor:** {modelo if modelo else 'N/A'} | **Años:** {anio if anio else 'N/A'}")
                     
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        if cod_del:
-                            st.info(f"🔹 **Delantera:**\n{cod_del}")
-                        else:
-                            st.write("🔹 *Delantera: No asignada*")
-                    with col2:
-                        if cod_tra:
-                            st.success(f"🛑 **Trasera:**\n{cod_tra}")
