@@ -13,12 +13,15 @@ st.set_page_config(
 # CONFIGURACIÓN DE USUARIOS Y CONTRASEÑAS
 # =======================================================
 USUARIOS_REGISTRADOS = {
-    "admin": "admin",
-    "leticia": "aceitera2026",
-    "abraham": "jefe2026",
-    "dailyn": "Lubricante2026",
-    "jackelin": "Repuesto2026"
+    "admin": "Fgarci@1404",
+    "leticia": "Aceitera2026",
+    "abraham": "Jefe2026",
+    "dailyn": "Lubricantes2026",
+    "jackelin": "Repuestos2026"
 }
+
+# Usuarios con acceso a la pestaña de búsqueda por código
+USUARIOS_BUSQUEDA_CODIGO = ["admin", "leticia"]
 
 ARCHIVO_EXCEL = "datos.xlsx"
 
@@ -64,6 +67,40 @@ def validar_anio(texto_celda, anio_buscado):
             return True
     return False
 
+def buscar_por_vehiculo(txt_marca, txt_modelo, txt_anio):
+    df_catalogo = cargar_catalogo_rapido()
+    if df_catalogo is None:
+        return None
+    coincidencias = []
+    for _, fila in df_catalogo.iterrows():
+        lista = fila.values.tolist()
+        if len(lista) < 3:
+            continue
+        marca, modelo, anio, cod_del, cod_tra = extraer_columnas_excel(lista)
+        val_marca = marca.lower()
+        if not val_marca or "hoja de" in val_marca or "catálogo" in val_marca or val_marca == "marca":
+            continue
+        if (txt_marca in val_marca) and (txt_modelo in modelo.lower()) and validar_anio(anio, txt_anio):
+            coincidencias.append((marca.upper(), modelo, anio, cod_del, cod_tra))
+    return coincidencias
+
+def buscar_por_codigo(txt_codigo):
+    df_catalogo = cargar_catalogo_rapido()
+    if df_catalogo is None:
+        return None
+    coincidencias = []
+    for _, fila in df_catalogo.iterrows():
+        lista = fila.values.tolist()
+        if len(lista) < 3:
+            continue
+        marca, modelo, anio, cod_del, cod_tra = extraer_columnas_excel(lista)
+        val_marca = marca.lower()
+        if not val_marca or "hoja de" in val_marca or "catálogo" in val_marca or val_marca == "marca":
+            continue
+        if (txt_codigo in cod_del.lower()) or (txt_codigo in cod_tra.lower()):
+            coincidencias.append((marca.upper(), modelo, anio, cod_del, cod_tra))
+    return coincidencias
+
 # -------------------------------------------------------
 # PANTALLA 1: INICIO DE SESIÓN
 # -------------------------------------------------------
@@ -87,9 +124,11 @@ if not st.session_state["autenticado"]:
 # PANTALLA 2: EL BUSCADOR AUTOMOTRIZ
 # -------------------------------------------------------
 else:
+    usuario_activo = st.session_state["usuario_actual"]
+    
     col_titulo, col_logout = st.columns([0.65, 0.35])
     with col_logout:
-        st.write(f"👤: **{st.session_state['usuario_actual'].capitalize()}**")
+        st.write(f"👤: **{usuario_activo.capitalize()}**")
         if st.button("🚪 Salir", use_container_width=True):
             st.session_state["autenticado"] = False
             st.session_state["usuario_actual"] = ""
@@ -100,45 +139,62 @@ else:
         st.title("🚘 Catálogo")
         st.caption("Buscador Automotriz")
 
-    with st.form("buscador_form"):
-        txt_marca = st.text_input("1. Marca * (ej: Toyota, Kia, Honda...)").strip().lower()
-        txt_modelo = st.text_input("2. Modelo / Motor * (ej: Corolla, Hilux...)").strip().lower()
-        txt_anio = st.text_input("3. Año exacto * (ej: 2015, 2004...)").strip()
+    # --- VISTA CON 2 PESTAÑAS PARA ADMIN Y LETICIA ---
+    if usuario_activo in USUARIOS_BUSQUEDA_CODIGO:
+        tab_vehiculo, tab_codigo = st.tabs(["🚗 Buscar por Vehículo", "🔢 Buscar por Código"])
         
-        if st.form_submit_button("🔍 Buscar Repuesto", use_container_width=True):
-            # Validación estricta: las 3 casillas deben tener texto
-            if not txt_marca or not txt_modelo or not txt_anio:
-                st.warning("⚠️ Es obligatorio llenar las 3 casillas (Marca, Modelo y Año) para realizar una búsqueda exacta.")
-                st.session_state["resultados_busqueda"] = None
-            elif not txt_anio.isdigit() or len(txt_anio) != 4:
-                st.warning("⚠️ Por favor, escribe un año válido de 4 dígitos (ej: 2015).")
-                st.session_state["resultados_busqueda"] = None
-            else:
-                df_catalogo = cargar_catalogo_rapido()
-                if df_catalogo is None:
-                    st.error("❌ Archivo 'datos.xlsx' no encontrado.")
+        with tab_vehiculo:
+            with st.form("buscador_vehiculo_privilegiado"):
+                txt_marca = st.text_input("1. Marca * (ej: Toyota, Kia, Honda...)").strip().lower()
+                txt_modelo = st.text_input("2. Modelo / Motor * (ej: Corolla, Hilux...)").strip().lower()
+                txt_anio = st.text_input("3. Año exacto * (ej: 2015, 2004...)").strip()
+                
+                if st.form_submit_button("🔍 Buscar por Vehículo", use_container_width=True):
+                    if not txt_marca or not txt_modelo or not txt_anio:
+                        st.warning("⚠️ Es obligatorio llenar las 3 casillas (Marca, Modelo y Año).")
+                        st.session_state["resultados_busqueda"] = None
+                    elif not txt_anio.isdigit() or len(txt_anio) != 4:
+                        st.warning("⚠️ Por favor, escribe un año válido de 4 dígitos (ej: 2015).")
+                        st.session_state["resultados_busqueda"] = None
+                    else:
+                        res = buscar_por_vehiculo(txt_marca, txt_modelo, txt_anio)
+                        if res is None:
+                            st.error("❌ Archivo 'datos.xlsx' no encontrado.")
+                        st.session_state["resultados_busqueda"] = res
+
+        with tab_codigo:
+            with st.form("buscador_codigo_privilegiado"):
+                txt_codigo = st.text_input("Código de pastilla (ej: 717, D1210, 24332...)").strip().lower()
+                
+                if st.form_submit_button("🔍 Buscar por Código", use_container_width=True):
+                    if not txt_codigo:
+                        st.warning("⚠️ Escribe un código para realizar la búsqueda.")
+                        st.session_state["resultados_busqueda"] = None
+                    else:
+                        res = buscar_por_codigo(txt_codigo)
+                        if res is None:
+                            st.error("❌ Archivo 'datos.xlsx' no encontrado.")
+                        st.session_state["resultados_busqueda"] = res
+
+    # --- VISTA ESTÁNDAR PARA EL RESTO DE USUARIOS ---
+    else:
+        with st.form("buscador_form_general"):
+            txt_marca = st.text_input("1. Marca * (ej: Toyota, Kia, Honda...)").strip().lower()
+            txt_modelo = st.text_input("2. Modelo / Motor * (ej: Corolla, Hilux...)").strip().lower()
+            txt_anio = st.text_input("3. Año exacto * (ej: 2015, 2004...)").strip()
+            
+            if st.form_submit_button("🔍 Buscar", use_container_width=True):
+                if not txt_marca or not txt_modelo or not txt_anio:
+                    st.warning("⚠️ Es obligatorio llenar las 3 casillas (Marca, Modelo y Año) para realizar una búsqueda exacta.")
+                    st.session_state["resultados_busqueda"] = None
+                elif not txt_anio.isdigit() or len(txt_anio) != 4:
+                    st.warning("⚠️ Por favor, escribe un año válido de 4 dígitos (ej: 2015).")
                     st.session_state["resultados_busqueda"] = None
                 else:
-                    coincidencias = []
-                    for _, fila in df_catalogo.iterrows():
-                        lista = fila.values.tolist()
-                        if len(lista) < 3:
-                            continue
-                        
-                        marca, modelo, anio, cod_del, cod_tra = extraer_columnas_excel(lista)
-                        val_marca = marca.lower()
-                        
-                        if not val_marca or "hoja de" in val_marca or "catálogo" in val_marca or val_marca == "marca":
-                            continue
-                            
-                        cumple_marca = txt_marca in val_marca
-                        cumple_modelo = txt_modelo in modelo.lower()
-                        cumple_anio = validar_anio(anio, txt_anio)
-                        
-                        if cumple_marca and cumple_modelo and cumple_anio:
-                            coincidencias.append((marca.upper(), modelo, anio, cod_del, cod_tra))
-                    
-                    st.session_state["resultados_busqueda"] = coincidencias
+                    res = buscar_por_vehiculo(txt_marca, txt_modelo, txt_anio)
+                    if res is None:
+                        st.error("❌ Archivo 'datos.xlsx' no encontrado.")
+                    st.session_state["resultados_busqueda"] = res
 
     # -------------------------------------------------------
     # DESPLIEGUE DE RESULTADOS
@@ -163,7 +219,3 @@ else:
                     with col2:
                         if cod_tra:
                             st.success(f"🛑 **Trasera:**\n{cod_tra}")
-                        else:
-                            st.write("🛑 *Trasera: No asignada*")
-        else:
-            st.error("❌ No se encontraron repuestos con esa combinación exacta de Marca, Modelo y Año.")
