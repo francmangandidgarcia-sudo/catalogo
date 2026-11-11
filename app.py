@@ -30,28 +30,20 @@ if "resultados_busqueda" not in str_m.session_state:
 def cargar_catalogo_real():
     if not os.path.exists(ARCHIVO_EXCEL):
         return None
-    try:
-        df = pd.read_excel(ARCHIVO_EXCEL, header=None).fillna("").astype(str)
-        for col in df.columns:
-            df[col] = df[col].str.replace(r"\.0$", "", regex=True).str.strip()
-        return df
-    except Exception as e:
-        str_m.error(f"Error al leer Excel: {e}")
-        return None
+    df = pd.read_excel(ARCHIVO_EXCEL, header=None).fillna("").astype(str)
+    for col in df.columns:
+        df[col] = df[col].str.replace(r"\.0$", "", regex=True).str.strip()
+    return df
 
 def actualizar_stock_en_excel(fila_index, columna_index, nueva_cantidad):
-    try:
-        df = pd.read_excel(ARCHIVO_EXCEL, header=None)
+    df = pd.read_excel(ARCHIVO_EXCEL, header=None)
+    total_cols = len(df.columns)
+    while total_cols <= columna_index:
+        df[total_cols] = ""
         total_cols = len(df.columns)
-        while total_cols <= columna_index:
-            df[total_cols] = ""
-            total_cols = len(df.columns)
-        df.iat[fila_index, columna_index] = int(nueva_cantidad)
-        df.to_excel(ARCHIVO_EXCEL, index=False, header=False)
-        return True
-    except Exception as e:
-        str_m.error(f"Error al guardar: {e}")
-        return False
+    df.iat[fila_index, columna_index] = int(nueva_cantidad)
+    df.to_excel(ARCHIVO_EXCEL, index=False, header=False)
+    return True
 
 def validar_anio(texto_celda, anio_buscado):
     if not anio_buscado:
@@ -66,12 +58,22 @@ def validar_anio(texto_celda, anio_buscado):
     return False
 
 def limpiar_entero(valor):
-    if not valor or str(valor).lower() == "nan" or str(valor).strip() == "":
+    texto = str(valor).strip().lower()
+    if texto == "" or texto == "nan" or texto == "none":
         return 0
-    try:
-        return int(float(str(valor).strip()))
-    except ValueError:
-        return 0
+    if texto.replace(".", "", 1).isdigit():
+        return int(float(texto))
+    return 0
+
+def extraer_columnas_seguras(lista_cruda):
+    siete = []
+    for item in lista_cruda:
+        if len(siete) < 7:
+            siete.append(str(item).strip())
+    while len(siete) < 7:
+        siete.append("")
+    c0, c1, c2, c3, c4, c5, c6 = siete
+    return c0, c1, c2, c3, c4, c5, c6
 
 # -------------------------------------------------------
 # PANTALLA 1: INICIO DE SESIÓN
@@ -110,7 +112,7 @@ else:
             
     with col_titulo:
         str_m.title("🚘 Catálogo")
-        str_m.caption("Versión de Rescate Activa")
+        str_m.caption("Versión Estable Activa")
 
     if usuario_activo == "admin":
         tab_vehiculo, tab_codigo = str_m.tabs(["🚗 Buscar por Vehículo", "🔢 Buscar por Código (Solo Admin)"])
@@ -141,9 +143,10 @@ else:
                             if len(lista_celdas) < 3:
                                 continue
                             
-                            val_marca = str(lista_celdas[0]).strip().lower()
-                            val_modelo = str(lista_celdas[1]).strip().lower()
-                            val_anio_celda = str(lista_celdas[2]).strip()
+                            m_raw, mod_raw, a_raw, _, _, _, _ = extraer_columnas_seguras(lista_celdas)
+                            val_marca = m_raw.lower()
+                            val_modelo = mod_raw.lower()
+                            val_anio_celda = a_raw
                             
                             if "hoja de" in val_marca or "catálogo" in val_marca or val_marca == "marca" or val_marca == "":
                                 continue
@@ -176,19 +179,21 @@ else:
                                 if len(lista_celdas) < 3:
                                     continue
                                 
-                                val_marca = str(lista_celdas[0]).strip().lower()
+                                m_raw, _, _, _, cod_d_raw, _, cod_t_raw = extraer_columnas_seguras(lista_celdas)
+                                val_marca = m_raw.lower()
+                                
                                 if "hoja de" in val_marca or "catálogo" in val_marca or val_marca == "marca" or val_marca == "":
                                     continue
 
-                                cod_del = str(lista_celdas[4]).strip().lower() if len(lista_celdas) > 4 else ""
-                                cod_tra = str(lista_celdas[6]).strip().lower() if len(lista_celdas) > 6 else ""
+                                cod_del = cod_d_raw.lower()
+                                cod_tra = cod_t_raw.lower()
                                 
                                 if (txt_codigo in cod_del) or (txt_codigo in cod_tra):
                                     filas_coincidentes.append({"index": int(idx), "data": lista_celdas})
                             str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
     # -------------------------------------------------------
-    # VISOR DE RESULTADOS CON DIAGNÓSTICO INTEGRADO
+    # VISOR DE RESULTADOS LINEAL (SIN TRY/EXCEPT QUE SE DESALINEEN)
     # -------------------------------------------------------
     str_m.write("---")
     str_m.write("### Resultados del Catálogo")
@@ -199,26 +204,24 @@ else:
             str_m.success(f"📦 {len(resultados)} registro(s) encontrado(s)")
             
             for item in resultados:
-                try:
-                    fila_idx = item["index"]
-                    datos = item["data"]
-                    
-                    # Relleno seguro hasta 7 columnas
-                    while len(datos) < 7:
-                        datos.append("")
-                    
-                    marca_head = str(datos[0]).strip().upper()
-                    modelo_sub = str(datos[1]).strip()
-                    anio_sub = str(datos[2]).strip()
-                    
-                    cant_del = limpiar_entero(datos[3])
-                    cod_delantero = str(datos[4]).strip()
-                    cant_tra = limpiar_entero(datos[5])
-                    cod_trasero = str(datos[6]).strip()
-                    
-                    str_m.write("=========================================")
-                    str_m.header(f"🚘 {marca_head}")
-                    str_m.subheader(f"Modelo: {modelo_sub} | Años: {anio_sub}")
-                    
-                    unidades_cambio = str_m.number_input("Cantidad de piezas a modificar:", min_value=1, value=1, step=1, key=f"cant_{fila_idx}")
-                    
+                fila_idx = item.get("index")
+                datos = item.get("data")
+                
+                m_str, mod_str, a_str, sd_str, cd_str, st_str, ct_str = extraer_columnas_seguras(datos)
+                
+                marca_head = m_str.upper()
+                modelo_sub = mod_str
+                anio_sub = a_str
+                
+                cant_del = limpiar_entero(sd_str)
+                cod_delantero = cd_str
+                cant_tra = limpiar_entero(st_str)
+                cod_trasero = ct_str
+                
+                str_m.write("=========================================")
+                str_m.header(f"🚘 {marca_head}")
+                str_m.subheader(f"Modelo: {modelo_sub} | Años: {anio_sub}")
+                
+                unidades_cambio = str_m.number_input("Cantidad de piezas a modificar:", min_value=1, value=1, step=1, key=f"cant_{fila_idx}")
+                
+                # --- DELANTERA ---
