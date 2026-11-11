@@ -14,18 +14,18 @@ st.set_page_config(
 # =======================================================
 USUARIOS_REGISTRADOS = {
     "admin": "admin",
-    "leticia": "Aceitera2026",
-    "abraham": "Jefe2026",
-    "dailyn": "Lubricantes2026",
-    "jackelin": "Repuestos2026"
+    "leticia": "aceitera2026",
+    "abraham": "jefe2026",
+    "dailyn": "Lubricante2026",
+    "jackelin": "Repuesto2026"
 }
 
 NOMBRES_COMPLETOS = {
     "admin": "Administrador General",
     "leticia": "Maria Leticia Osorio",
-    "abraham": "Luis Abraham Mellado Osorio",
-    "dailyn": "Dailyn Siomara Del Cid",
-    "jackelin": "Jackelin"
+    "abraham": "Abraham (Completar Apellido)",
+    "dailyn": "Dailyn (Completar Apellido)",
+    "jackelin": "Jackelin (Completar Apellido)"
 }
 
 # Usuarios con acceso a la pestaña de búsqueda por código
