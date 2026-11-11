@@ -39,7 +39,7 @@ if "resultados_busqueda" not in st.session_state:
     st.session_state["resultados_busqueda"] = None
 
 # =======================================================
-# FUNCIONES DE LECTURA Y BÚSQUEDA (5 COLUMNAS EXACTAS)
+# FUNCIONES DE LECTURA Y BÚSQUEDA INTELIGENTE
 # =======================================================
 def limpiar_texto(valor):
     texto = str(valor).replace("\n", " ").replace("\r", " ").strip()
@@ -54,12 +54,25 @@ def cargar_catalogo_rapido():
         df[col] = df[col].str.replace(r"\.0$", "", regex=True).str.strip()
     return df
 
-def extraer_5_columnas(lista_cruda):
-    cinco = [limpiar_texto(x) for x in lista_cruda[:5]]
-    while len(cinco) < 5:
-        cinco.append("")
-    c_marca, c_modelo, c_anio, c_cod_d, c_cod_t = cinco
-    return c_marca, c_modelo, c_anio, c_cod_d, c_cod_t
+def analizar_fila(lista_cruda):
+    celdas = [limpiar_texto(x) for x in lista_cruda]
+    while len(celdas) < 5:
+        celdas.append("")
+    
+    marca = celdas[0]
+    modelo = celdas[1]
+    anio = celdas[2]
+    
+    # Si el Excel tiene 5 columnas exactas (A=Marca, B=Modelo, C=Año, D=Del, E=Tra)
+    if len(celdas) == 5:
+        cod_del = celdas[3]
+        cod_tra = celdas[4]
+    else:
+        # Si quedaron columnas vacías en medio (ej. 7 columnas), toma las posiciones 4 y 6 o las no vacías
+        cod_del = celdas[3] if celdas[3] else (celdas[4] if len(celdas) > 4 else "")
+        cod_tra = celdas[4] if (celdas[3] and celdas[4]) else (celdas[6] if len(celdas) > 6 else (celdas[5] if len(celdas) > 5 else ""))
+        
+    return marca, modelo, anio, cod_del, cod_tra
 
 def validar_anio(texto_celda, anio_buscado):
     if not anio_buscado:
@@ -81,7 +94,7 @@ def buscar_por_vehiculo(txt_marca, txt_modelo, txt_anio):
         lista = fila.values.tolist()
         if len(lista) < 3:
             continue
-        marca, modelo, anio, cod_del, cod_tra = extraer_5_columnas(lista)
+        marca, modelo, anio, cod_del, cod_tra = analizar_fila(lista)
         val_marca = marca.lower()
         if not val_marca or "hoja de" in val_marca or "catálogo" in val_marca or val_marca == "marca":
             continue
@@ -98,11 +111,13 @@ def buscar_por_codigo(txt_codigo):
         lista = fila.values.tolist()
         if len(lista) < 3:
             continue
-        marca, modelo, anio, cod_del, cod_tra = extraer_5_columnas(lista)
+        marca, modelo, anio, cod_del, cod_tra = analizar_fila(lista)
         val_marca = marca.lower()
         if not val_marca or "hoja de" in val_marca or "catálogo" in val_marca or val_marca == "marca":
             continue
-        if (txt_codigo in cod_del.lower()) or (txt_codigo in cod_tra.lower()):
+        # Busca el código en cualquier celda de la fila después del año
+        resto_fila = " ".join([limpiar_texto(c).lower() for c in lista[3:]])
+        if txt_codigo in resto_fila:
             coincidencias.append((marca.upper(), modelo, anio, cod_del, cod_tra))
     return coincidencias
 
@@ -203,20 +218,10 @@ else:
                     st.session_state["resultados_busqueda"] = res
 
     # -------------------------------------------------------
-    # DESPLIEGUE DE RESULTADOS (PLANO Y DIRECTO)
+    # DESPLIEGUE DE RESULTADOS
     # -------------------------------------------------------
     resultados = st.session_state["resultados_busqueda"]
     
     if resultados is not None:
         if len(resultados) > 0:
             st.success(f"📦 {len(resultados)} registro(s) encontrado(s)")
-            
-            for marca, modelo, anio, cod_del, cod_tra in resultados:
-                mod_final = modelo if modelo else "N/A"
-                anio_final = anio if anio else "N/A"
-                txt_del = f"🔹 **Delantera:** {cod_del}" if cod_del else "🔹 *Delantera: No asignada*"
-                txt_tra = f"🛑 **Trasera:** {cod_tra}" if cod_tra else "🛑 *Trasera: No asignada*"
-                
-                st.write("---")
-                st.subheader(f"🚘 {marca}")
-                st.write(f"**Modelo/Motor:** {mod_final} | **Años:** {anio_final}")
