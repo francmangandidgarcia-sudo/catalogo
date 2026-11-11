@@ -72,8 +72,7 @@ def extraer_columnas_seguras(lista_cruda):
             siete.append(str(item).strip())
     while len(siete) < 7:
         siete.append("")
-    c0, c1, c2, c3, c4, c5, c6 = siete
-    return c0, c1, c2, c3, c4, c5, c6
+    return siete
 
 # -------------------------------------------------------
 # PANTALLA 1: INICIO DE SESIÓN
@@ -147,10 +146,10 @@ else:
                             if len(lista_celdas) < 3:
                                 continue
                             
-                            m_raw, mod_raw, a_raw, _, _, _, _ = extraer_columnas_seguras(lista_celdas)
-                            val_marca = m_raw.lower()
-                            val_modelo = mod_raw.lower()
-                            val_anio_celda = a_raw
+                            siete = extraer_columnas_seguras(lista_celdas)
+                            val_marca = siete[0].lower()
+                            val_modelo = siete[1].lower()
+                            val_anio_celda = siete[2]
                             
                             if "hoja de" in val_marca or "catálogo" in val_marca or val_marca == "marca" or val_marca == "":
                                 continue
@@ -160,7 +159,7 @@ else:
                             cumple_anio = not txt_anio or validar_anio(val_anio_celda, txt_anio)
                             
                             if cumple_marca and cumple_modelo and cumple_anio:
-                                filas_coincidentes.append({"index": int(idx), "data": lista_celdas, "modo": "vehiculo"})
+                                filas_coincidentes.append({"index": int(idx), "data": siete, "modo": "vehiculo"})
                         str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
     # --- PESTAÑA B: CÓDIGO (SOLO ADMIN Y LETICIA) ---
@@ -183,21 +182,21 @@ else:
                                 if len(lista_celdas) < 3:
                                     continue
                                 
-                                m_raw, _, _, _, cod_d_raw, _, cod_t_raw = extraer_columnas_seguras(lista_celdas)
-                                val_marca = m_raw.lower()
+                                siete = extraer_columnas_seguras(lista_celdas)
+                                val_marca = siete[0].lower()
                                 
                                 if "hoja de" in val_marca or "catálogo" in val_marca or val_marca == "marca" or val_marca == "":
                                     continue
 
-                                cod_del = cod_d_raw.lower()
-                                cod_tra = cod_t_raw.lower()
+                                cod_del = siete[4].lower()
+                                cod_tra = siete[6].lower()
                                 
                                 if (txt_codigo in cod_del) or (txt_codigo in cod_tra):
-                                    filas_coincidentes.append({"index": int(idx), "data": lista_celdas, "modo": "codigo"})
+                                    filas_coincidentes.append({"index": int(idx), "data": siete, "modo": "codigo"})
                             str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
     # -------------------------------------------------------
-    # VISOR DIRECTO EN PANTALLA (GARANTÍA DE RENDERIZADO)
+    # VISOR DIRECTO EN PANTALLA
     # -------------------------------------------------------
     str_m.write("---")
     str_m.write("### Resultados del Catálogo")
@@ -207,19 +206,19 @@ else:
         if len(resultados) > 0:
             str_m.success(f"📦 {len(resultados)} registro(s) encontrado(s)")
             
-            # Recorremos cada fila encontrada
             for i, item in enumerate(resultados):
                 fila_idx = item.get("index", i)
-                datos = item.get("data", [])
+                siete = item.get("data", ["", "", "", "", "", "", ""])
                 modo_busqueda = item.get("modo", "vehiculo")
                 
-                m_str, mod_str, a_str, sd_str, cd_str, st_str, ct_str = extraer_columnas_seguras(datos)
+                marca_head = str(siete[0]).upper() if siete[0] else "SIN MARCA"
+                modelo_sub = str(siete[1]) if siete[1] else "N/A"
+                anio_sub = str(siete[2]) if siete[2] else "N/A"
+                cant_del = limpiar_entero(siete[3])
+                cod_delantero = str(siete[4]) if siete[4] and str(siete[4]).lower() != 'nan' else 'No asignada'
+                cant_tra = limpiar_entero(siete[5])
+                cod_trasero = str(siete[6]) if siete[6] and str(siete[6]).lower() != 'nan' else 'No asignada'
                 
-                marca_head = m_str.upper() if m_str else "SIN MARCA"
-                modelo_sub = mod_str if mod_str else "N/A"
-                anio_sub = a_str if a_str else "N/A"
-                cant_del = limpiar_entero(sd_str)
-                cod_delantero = cd_str if cd_str and cd_str.lower() != 'nan' else 'No asignada'
-                cant_tra = limpiar_entero(st_str)
-                cod_trasero = ct_str if ct_str and ct_str.lower() != 'nan' else 'No asignada'
+                str_m.write("---")
+                str_m.markdown(f"#### 🚘 {marca_head} | {modelo_sub} ({anio_sub})")
                 
