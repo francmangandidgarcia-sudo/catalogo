@@ -14,19 +14,19 @@ st.set_page_config(
 # =======================================================
 USUARIOS_REGISTRADOS = {
     "admin": "admin",
-    "leticia": "Aceitera2026",
-    "abraham": "Jefe2026",
-    "dailyn": "Lubricantes2026",
-    "jackelin": "Repuestos2026"
+    "Leticia": "Aceitera2026",
+    "Abraham": "Jefe2026",
+    "Dailyn": "Lubricantes2026",
+    "Jackelin": "Repuestos2026"
 }
 
 # Aquí puedes editar los nombres completos que aparecerán al iniciar sesión
 NOMBRES_COMPLETOS = {
     "admin": "Administrador General",
-    "leticia": "Maria Leticia Osorio",
-    "abraham": "Luis Abraham Mellado Osorio",
-    "dailyn": "Dailyn Siomara Del Cid",
-    "jackelin": "Jackelin"
+    "Leticia": "Maria Leticia Osorio",
+    "Abraham": "Luis Abraham Mellado Osorio",
+    "Dailyn": "Dailyn Siomara Del Cid",
+    "Jackelin": "Jackelin"
 }
 
 # Usuarios con acceso a la pestaña de búsqueda por código
