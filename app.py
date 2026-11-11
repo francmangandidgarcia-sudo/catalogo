@@ -17,6 +17,7 @@ USUARIOS_REGISTRADOS = {
     "jackelin": "Repuesto2026"
 }
 
+# Solo estos 2 usuarios tienen acceso a Ingreso por Código y botón Agregar
 USUARIOS_PRIVILEGIADOS = ["admin", "leticia"]
 ARCHIVO_EXCEL = "datos.xlsx"
 
@@ -65,14 +66,15 @@ def limpiar_entero(valor):
         return int(float(texto))
     return 0
 
-def extraer_columnas_seguras(lista_cruda):
+def extraer_7_datos(lista_cruda):
     siete = []
     for item in lista_cruda:
         if len(siete) < 7:
             siete.append(str(item).strip())
     while len(siete) < 7:
         siete.append("")
-    return siete
+    c_marca, c_modelo, c_anio, c_cant_d, c_cod_d, c_cant_t, c_cod_t = siete
+    return c_marca, c_modelo, c_anio, c_cant_d, c_cod_d, c_cant_t, c_cod_t
 
 # -------------------------------------------------------
 # PANTALLA 1: INICIO DE SESIÓN
@@ -129,7 +131,7 @@ else:
     with tab_vehiculo:
         with str_m.form("buscador_vehiculo_form"):
             txt_marca = str_m.text_input("1. Marca (ej: Toyota, Kia...)").strip().lower()
-            txt_modelo = str_m.text_input("2. Modelo / Motor (ej: Corolla, 22 r...)").strip().lower()
+            txt_modelo = str_m.text_input("2. Modelo / Motor (ej: Corolla, Hilux...)").strip().lower()
             txt_anio = str_m.text_input("3. Año exacto (ej: 2015...)").strip()
             btn_buscar_v = str_m.form_submit_button("🔍 Buscar por Vehículo", use_container_width=True)
             
@@ -146,21 +148,19 @@ else:
                             if len(lista_celdas) < 3:
                                 continue
                             
-                            siete = extraer_columnas_seguras(lista_celdas)
-                            c_marca, c_modelo, c_anio, _, _, _, _ = siete
+                            c_marca, c_modelo, c_anio, _, _, _, _ = extraer_7_datos(lista_celdas)
                             val_marca = c_marca.lower()
                             val_modelo = c_modelo.lower()
-                            val_anio_celda = c_anio
                             
                             if "hoja de" in val_marca or "catálogo" in val_marca or val_marca == "marca" or val_marca == "":
                                 continue
                                 
                             cumple_marca = not txt_marca or (txt_marca in val_marca)
                             cumple_modelo = not txt_modelo or (txt_modelo in val_modelo)
-                            cumple_anio = not txt_anio or validar_anio(val_anio_celda, txt_anio)
+                            cumple_anio = not txt_anio or validar_anio(c_anio, txt_anio)
                             
                             if cumple_marca and cumple_modelo and cumple_anio:
-                                filas_coincidentes.append({"index": int(idx), "data": siete, "modo": "vehiculo"})
+                                filas_coincidentes.append({"index": int(idx), "data": lista_celdas, "modo": "vehiculo"})
                         str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
     # --- PESTAÑA B: CÓDIGO (SOLO ADMIN Y LETICIA) ---
@@ -183,8 +183,7 @@ else:
                                 if len(lista_celdas) < 3:
                                     continue
                                 
-                                siete = extraer_columnas_seguras(lista_celdas)
-                                c_marca, _, _, _, c_cod_d, _, c_cod_t = siete
+                                c_marca, _, _, _, c_cod_d, _, c_cod_t = extraer_7_datos(lista_celdas)
                                 val_marca = c_marca.lower()
                                 
                                 if "hoja de" in val_marca or "catálogo" in val_marca or val_marca == "marca" or val_marca == "":
@@ -194,7 +193,7 @@ else:
                                 cod_tra = c_cod_t.lower()
                                 
                                 if (txt_codigo in cod_del) or (txt_codigo in cod_tra):
-                                    filas_coincidentes.append({"index": int(idx), "data": siete, "modo": "codigo"})
+                                    filas_coincidentes.append({"index": int(idx), "data": lista_celdas, "modo": "codigo"})
                             str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
     # -------------------------------------------------------
@@ -210,14 +209,13 @@ else:
             
             for i, item in enumerate(resultados):
                 fila_idx = item.get("index", i)
-                siete = item.get("data", ["", "", "", "", "", "", ""])
+                lista_cruda = item.get("data", [])
                 modo_busqueda = item.get("modo", "vehiculo")
                 
-                # Desempaquetado directo sin corchetes numéricos
-                col_marca, col_modelo, col_anio, col_cant_del, col_cod_del, col_cant_tra, col_cod_tra = siete
+                # Extracción directa en 7 variables independientes (sin corchetes)
+                col_marca, col_modelo, col_anio, col_cant_del, col_cod_del, col_cant_tra, col_cod_tra = extraer_7_datos(lista_cruda)
                 
-                marca_head = str(col_marca).upper() if col_marca else "SIN MARCA"
-                modelo_sub = str(col_modelo) if col_modelo else "N/A"
-                anio_sub = str(col_anio) if col_anio else "N/A"
+                marca_head = col_marca.upper() if col_marca else "SIN MARCA"
+                modelo_sub = col_modelo if col_modelo else "N/A"
+                anio_sub = col_anio if col_anio else "N/A"
                 cant_del = limpiar_entero(col_cant_del)
-                cod_delantero = str(col_cod_del) if col_cod_del and str(col_cod_del).lower() != 'nan' else 'No asignada'
