@@ -103,7 +103,7 @@ if not str_m.session_state["autenticado"]:
                 str_m.error("❌ Usuario o contraseña incorrectos.")
 
 # -------------------------------------------------------
-# PANTALLA 2: EL BUSCADOR SEGÚN ROL
+# PANTALLA 2: EL BUSCADOR Y RAYOS X
 # -------------------------------------------------------
 else:
     usuario_activo = str_m.session_state["usuario_actual"]
@@ -120,10 +120,7 @@ else:
             
     with col_titulo:
         str_m.title("🚘 Catálogo")
-        if es_privilegiado:
-            str_m.caption("Modo Administrador (Ingresos y Ventas)")
-        else:
-            str_m.caption("Modo Ventas (Consulta y Descuento)")
+        str_m.caption("Diagnóstico de Columnas Activo")
 
     if es_privilegiado:
         tab_vehiculo, tab_codigo = str_m.tabs(["🚗 Buscar por Vehículo", "🔢 Ingreso por Código"])
@@ -203,7 +200,7 @@ else:
                             str_m.session_state["resultados_busqueda"] = filas_coincidentes
 
     # -------------------------------------------------------
-    # VISOR ULTRA-LIGERO CON BOTONES DIRECTOS (-1 / +1)
+    # VISOR CON RAYOS X DE COLUMNAS
     # -------------------------------------------------------
     str_m.write("---")
     str_m.write("### Resultados del Catálogo")
@@ -218,9 +215,12 @@ else:
                 lista_cruda = item.get("data", [])
                 modo_busqueda = item.get("modo", "vehiculo")
                 
+                # CAJA DE RAYOS X: Muestra las primeras 3 filas crudas exactamente como las ve Python
+                if i == 0:
+                    str_m.warning(f"🔍 **Rayos X Fila 1 (Así lee tu Excel el servidor):** {lista_cruda}")
+                
                 col_marca, col_modelo, col_anio, col_cant_del, col_cod_del, col_cant_tra, col_cod_tra = extraer_7_datos(lista_cruda)
                 
                 marca_head = col_marca.upper() if col_marca else "SIN MARCA"
                 modelo_sub = col_modelo if col_modelo else "N/A"
                 anio_sub = col_anio if col_anio else "N/A"
-                cant_del = limpiar_entero(col_cant_del)
