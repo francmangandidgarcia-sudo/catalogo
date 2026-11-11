@@ -14,19 +14,18 @@ st.set_page_config(
 # =======================================================
 USUARIOS_REGISTRADOS = {
     "admin": "admin",
-    "Leticia": "Aceitera2026",
-    "Abraham": "Jefe2026",
-    "Dailyn": "Lubricantes2026",
-    "Jackelin": "Repuestos2026"
+    "leticia": "Aceitera2026",
+    "abraham": "Jefe2026",
+    "dailyn": "Lubricantes2026",
+    "jackelin": "Repuestos2026"
 }
 
-# Aquí puedes editar los nombres completos que aparecerán al iniciar sesión
 NOMBRES_COMPLETOS = {
     "admin": "Administrador General",
-    "Leticia": "Maria Leticia Osorio",
-    "Abraham": "Luis Abraham Mellado Osorio",
-    "Dailyn": "Dailyn Siomara Del Cid",
-    "Jackelin": "Jackelin"
+    "leticia": "Maria Leticia Osorio",
+    "abraham": "Luis Abraham Mellado Osorio",
+    "dailyn": "Dailyn Siomara Del Cid",
+    "jackelin": "Jackelin"
 }
 
 # Usuarios con acceso a la pestaña de búsqueda por código
@@ -42,7 +41,7 @@ if "resultados_busqueda" not in st.session_state:
     st.session_state["resultados_busqueda"] = None
 
 # =======================================================
-# FUNCIONES DE LECTURA Y BÚSQUEDA
+# FUNCIONES DE LECTURA Y BÚSQUEDA (5 COLUMNAS EXACTAS)
 # =======================================================
 def limpiar_texto(valor):
     texto = str(valor).replace("\n", " ").replace("\r", " ").strip()
@@ -57,12 +56,12 @@ def cargar_catalogo_rapido():
         df[col] = df[col].str.replace(r"\.0$", "", regex=True).str.strip()
     return df
 
-def extraer_columnas_excel(lista_cruda):
-    siete = [limpiar_texto(x) for x in lista_cruda[:7]]
-    while len(siete) < 7:
-        siete.append("")
-    # A=Marca, B=Modelo, C=Año, D=Ignorada, E=Cod_Delantera, F=Ignorada, G=Cod_Trasera
-    c_marca, c_modelo, c_anio, _, c_cod_d, _, c_cod_t = siete
+def extraer_5_columnas(lista_cruda):
+    cinco = [limpiar_texto(x) for x in lista_cruda[:5]]
+    while len(cinco) < 5:
+        cinco.append("")
+    # A=Marca, B=Modelo, C=Año, D=Cod_Delantera, E=Cod_Trasera
+    c_marca, c_modelo, c_anio, c_cod_d, c_cod_t = cinco
     return c_marca, c_modelo, c_anio, c_cod_d, c_cod_t
 
 def validar_anio(texto_celda, anio_buscado):
@@ -85,7 +84,7 @@ def buscar_por_vehiculo(txt_marca, txt_modelo, txt_anio):
         lista = fila.values.tolist()
         if len(lista) < 3:
             continue
-        marca, modelo, anio, cod_del, cod_tra = extraer_columnas_excel(lista)
+        marca, modelo, anio, cod_del, cod_tra = extraer_5_columnas(lista)
         val_marca = marca.lower()
         if not val_marca or "hoja de" in val_marca or "catálogo" in val_marca or val_marca == "marca":
             continue
@@ -102,7 +101,7 @@ def buscar_por_codigo(txt_codigo):
         lista = fila.values.tolist()
         if len(lista) < 3:
             continue
-        marca, modelo, anio, cod_del, cod_tra = extraer_columnas_excel(lista)
+        marca, modelo, anio, cod_del, cod_tra = extraer_5_columnas(lista)
         val_marca = marca.lower()
         if not val_marca or "hoja de" in val_marca or "catálogo" in val_marca or val_marca == "marca":
             continue
@@ -159,7 +158,7 @@ else:
                 txt_modelo = st.text_input("2. Modelo / Motor * (ej: Corolla, Hilux...)").strip().lower()
                 txt_anio = st.text_input("3. Año exacto * (ej: 2015, 2004...)").strip()
                 
-                if st.form_submit_button("🔍 Buscar por Vehículo", use_container_width=True):
+                if st.form_submit_button("🔍 Buscar", use_container_width=True):
                     if not txt_marca or not txt_modelo or not txt_anio:
                         st.warning("⚠️ Es obligatorio llenar las 3 casillas (Marca, Modelo y Año).")
                         st.session_state["resultados_busqueda"] = None
@@ -176,7 +175,7 @@ else:
             with st.form("buscador_codigo_privilegiado"):
                 txt_codigo = st.text_input("Código de pastilla (ej: 717, D1210, 24332...)").strip().lower()
                 
-                if st.form_submit_button("🔍 Buscar por Código", use_container_width=True):
+                if st.form_submit_button("🔍 Buscar", use_container_width=True):
                     if not txt_codigo:
                         st.warning("⚠️ Escribe un código para realizar la búsqueda.")
                         st.session_state["resultados_busqueda"] = None
@@ -220,3 +219,6 @@ else:
                     st.markdown(f"### 🚘 {marca}")
                     st.markdown(f"**Modelo/Motor:** {modelo if modelo else 'N/A'} | **Años:** {anio if anio else 'N/A'}")
                     
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if cod_del:
