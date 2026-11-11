@@ -203,7 +203,7 @@ else:
                     st.session_state["resultados_busqueda"] = res
 
     # -------------------------------------------------------
-    # DESPLIEGUE DE RESULTADOS (PLANO E INMUNE A SANGRÍAS)
+    # DESPLIEGUE DE RESULTADOS (PLANO Y DIRECTO)
     # -------------------------------------------------------
     resultados = st.session_state["resultados_busqueda"]
     
@@ -212,10 +212,11 @@ else:
             st.success(f"📦 {len(resultados)} registro(s) encontrado(s)")
             
             for marca, modelo, anio, cod_del, cod_tra in resultados:
-                txt_del = f"🔹 **Delantera:** {cod_del}" if cod_del else "🔹 *Delantera: No asignada*"
-                txt_tra = f"🛑 **Trasera:** {cod_tra}" if cod_tra else "🛑 *Trasera: No asignada*"
                 mod_final = modelo if modelo else "N/A"
                 anio_final = anio if anio else "N/A"
+                txt_del = f"🔹 **Delantera:** {cod_del}" if cod_del else "🔹 *Delantera: No asignada*"
+                txt_tra = f"🛑 **Trasera:** {cod_tra}" if cod_tra else "🛑 *Trasera: No asignada*"
                 
-                with st.container(border=True):
-                    st.markdown(f"### 🚘 {marca}")
+                st.write("---")
+                st.subheader(f"🚘 {marca}")
+                st.write(f"**Modelo/Motor:** {mod_final} | **Años:** {anio_final}")
